@@ -7,4 +7,6 @@ public interface PublicParameters {
 
     List<URI> getServers();
 
+    int registerClient();
+
 }

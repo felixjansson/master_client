@@ -14,6 +14,11 @@ public class ShareObject {
         this.information = information;
     }
 
+    @SneakyThrows
+    public void addInformation(String key, Object value){
+        information.put(key,value);
+    }
+
     public URI getDestination() {
         return destination;
     }

@@ -17,12 +17,15 @@ public class SmartMeter {
     private Reader reader;
     private ClientSecretSharing clientSecretSharing;
     private PublicParameters pp;
+    int clientID;
 
     @Autowired
     public SmartMeter(Reader reader, ClientSecretSharing clientSecretSharing, PublicParameters pp) {
         this.pp = pp;
         this.reader = reader;
         this.clientSecretSharing = clientSecretSharing;
+        this.clientID = pp.registerClient();
+
     }
 
     @Autowired
@@ -30,6 +33,8 @@ public class SmartMeter {
         int val = reader.readValue();
         List<URI> servers = pp.getServers();
         List<ShareObject> shares = clientSecretSharing.shareSecret(val, servers);
+        shares.forEach(shareObject -> shareObject.addInformation("clientID", clientID));
+        shares.forEach(shareObject -> shareObject.addInformation("transformatorID", 1)); // TODO: 2020-02-20 Get correct transformatorID
         for (ShareObject share : shares) {
             httpAdapter.sendShare(share.destination, share.information);
         }
