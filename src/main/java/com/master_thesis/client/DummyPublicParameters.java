@@ -29,6 +29,11 @@ public class DummyPublicParameters implements PublicParameters {
         return servers;
     }
 
+    @Override
+    public int getTransformatorID() {
+        return 0;
+    }
+
 
     public int registerClient(){
         return  httpAdapter.registerClient();

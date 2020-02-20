@@ -7,6 +7,8 @@ public interface PublicParameters {
 
     List<URI> getServers();
 
+    int getTransformatorID();
+
     int registerClient();
 
 }

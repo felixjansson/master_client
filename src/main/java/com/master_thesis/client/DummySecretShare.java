@@ -2,10 +2,8 @@ package com.master_thesis.client;
 
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -15,21 +13,15 @@ public class DummySecretShare implements ClientSecretSharing {
 
     @Override
     @SneakyThrows
-    public List<ShareObject> shareSecret(int secret, List<URI> servers) {
-        List<ShareObject> shares = new LinkedList<>();
+    public List<Integer> shareSecret(int secret, int servers) {
+        List<Integer> shares = new LinkedList<>();
 //        Math magic
-        int share = secret / servers.size();
-        for (URI server : servers) {
-            JSONObject information = new JSONObject();
-            information.put("share", share);
+        int share = secret / servers;
+        for (int i = 0; i < servers-1; i++) {
             secret -= share;
-            shares.add(new ShareObject(server, information));
+            shares.add(share);
         }
-
-        shares.get(0).information.put("share", share + secret);
-//        end of math magic
-
+        shares.add(secret);
         return shares;
-
     }
 }
