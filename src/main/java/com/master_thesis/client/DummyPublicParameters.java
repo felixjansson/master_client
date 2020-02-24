@@ -1,6 +1,7 @@
 package com.master_thesis.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,10 +40,11 @@ public class DummyPublicParameters implements PublicParameters {
     @Override
     public int getTransformatorID() {
         return 0;
+
     }
 
 
-    public int registerClient() {
+    public JsonNode registerClient() {
         return httpAdapter.registerClient();
     }
 

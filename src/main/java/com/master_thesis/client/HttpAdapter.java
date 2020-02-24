@@ -1,17 +1,15 @@
 package com.master_thesis.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
-import org.springframework.boot.json.JacksonJsonParser;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Map;
+
 
 @Component
 public class HttpAdapter {
@@ -35,14 +33,11 @@ public class HttpAdapter {
 
 
     @SneakyThrows
-    public int registerClient(){
+    public JsonNode registerClient(){
         URI uri = URI.create("http://localhost:4000/api/client/register");
         HttpRequest request = HttpRequest.newBuilder(uri).POST(HttpRequest.BodyPublishers.noBody()).build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-
-        JacksonJsonParser parser = new JacksonJsonParser();
-        Map<String, Object> responseMap = parser.parseMap(response.body());
-        return (Integer)(responseMap.get("id"));
+        return objectMapper.readValue(response.body(),JsonNode.class);
     }
 
 }

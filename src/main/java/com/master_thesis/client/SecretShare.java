@@ -6,10 +6,21 @@ public class SecretShare {
     private int clientID;
     private int transformatorID;
 
-    public SecretShare(int share, int clientID, int transformatorID) {
+    public int getProofComponent() {
+        return proofComponent;
+    }
+
+    public void setProofComponent(int proofComponent) {
+        this.proofComponent = proofComponent;
+    }
+
+    private int proofComponent;
+
+    public SecretShare(int share, int clientID, int transformatorID, int proofComponent) {
         this.share = share;
         this.clientID = clientID;
         this.transformatorID = transformatorID;
+        this.proofComponent = proofComponent;
     }
 
     public int getShare() {
