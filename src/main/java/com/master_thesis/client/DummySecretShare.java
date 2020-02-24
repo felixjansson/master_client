@@ -1,6 +1,7 @@
 package com.master_thesis.client;
 
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -11,10 +12,18 @@ import java.util.List;
 @Qualifier("Dummy")
 public class DummySecretShare implements ClientSecretSharing {
 
+    private PublicParameters publicParameters;
+
+    @Autowired
+    public DummySecretShare(PublicParameters publicParameters) {
+        this.publicParameters = publicParameters;
+    }
+
     @Override
     @SneakyThrows
-    public List<Integer> shareSecret(int secret, int servers) {
+    public ShareTuple shareSecret(int secret) {
         List<Integer> shares = new LinkedList<>();
+        int servers = publicParameters.getServers().size();
 //        Math magic
         int share = secret / servers;
         for (int i = 0; i < servers-1; i++) {
@@ -22,6 +31,6 @@ public class DummySecretShare implements ClientSecretSharing {
             shares.add(share);
         }
         shares.add(secret);
-        return shares;
+        return new ShareTuple(shares,1);
     }
 }

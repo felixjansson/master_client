@@ -4,13 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 @SpringBootApplication
 public class SmartMeter {
@@ -41,18 +39,18 @@ public class SmartMeter {
     public void run() {
         int val = reader.readValue();
         List<URI> servers = publicParameters.getServers();
-        List<Integer> shares = clientSecretSharing.shareSecret(val, servers.size());
-        HashMap<URI, SecretShare> destinationMap = zipToMap(servers, shares);
+        ShareTuple shareTuple = clientSecretSharing.shareSecret(val);
+        HashMap<URI, SecretShare> destinationMap = zipToMap(servers, shareTuple);
         destinationMap.forEach(httpAdapter::sendShare);
     }
 
-    private HashMap<URI, SecretShare> zipToMap(List<URI> uris, List<Integer> shares) {
+    private HashMap<URI, SecretShare> zipToMap(List<URI> uris, ShareTuple shareTuple) {
         Iterator<URI> uriIter = uris.iterator();
-        Iterator<Integer> shareIter = shares.iterator();
+        Iterator<Integer> shareIter = shareTuple.shares.iterator();
         HashMap<URI, SecretShare> map = new HashMap<>();
 
         while (uriIter.hasNext() && shareIter.hasNext()) {
-            map.put(uriIter.next(), new SecretShare(shareIter.next(), clientID, transformatorID, 0));
+            map.put(uriIter.next(), new SecretShare(shareIter.next(), clientID, transformatorID, shareTuple.proofComponent));
         }
 
         if (uriIter.hasNext() || shareIter.hasNext()) {
