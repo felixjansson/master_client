@@ -43,9 +43,7 @@ public class SmartMeter {
         List<URI> servers = publicParameters.getServers();
         List<Integer> shares = clientSecretSharing.shareSecret(val, servers.size());
         HashMap<URI, SecretShare> destinationMap = zipToMap(servers, shares);
-        for (Map.Entry<URI, SecretShare> uriSecretShareEntry : destinationMap.entrySet()) {
-            httpAdapter.sendShare(uriSecretShareEntry.getKey(), uriSecretShareEntry.getValue());
-        }
+        destinationMap.forEach(httpAdapter::sendShare);
     }
 
     private HashMap<URI, SecretShare> zipToMap(List<URI> uris, List<Integer> shares) {
