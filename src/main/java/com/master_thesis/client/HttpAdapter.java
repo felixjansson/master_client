@@ -1,5 +1,6 @@
 package com.master_thesis.client;
 
+import cc.redberry.rings.bigint.BigInteger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
@@ -40,4 +41,19 @@ public class HttpAdapter {
         return objectMapper.readValue(response.body(),JsonNode.class);
     }
 
+    @SneakyThrows
+    public BigInteger getFieldBase(int transformatorID) {
+        URI uri = URI.create("http://localhost:4000/api/setup/fieldBase/" + transformatorID);
+        HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        return new BigInteger(response.body());
+    }
+
+    @SneakyThrows
+    public BigInteger getGenerator(int transformatorID) {
+        URI uri = URI.create("http://localhost:4000/api/setup/generator/" + transformatorID);
+        HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        return new BigInteger(response.body());
+    }
 }

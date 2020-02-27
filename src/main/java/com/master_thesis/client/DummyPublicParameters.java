@@ -46,11 +46,15 @@ public class DummyPublicParameters implements PublicParameters {
 
     }
 
+    @Override
+    public BigInteger getGenerator(int transformatorID) {
+        return httpAdapter.getGenerator(transformatorID);
+    }
 
 
     @Override
-    public BigInteger getFieldBase() { // TODO: 2020-02-24 Ask Dr.Internet
-        return Z.valueOf(17);
+    public BigInteger getFieldBase(int transformatorID) { // TODO: 2020-02-24 Ask Dr.Internet
+        return httpAdapter.getFieldBase(getTransformatorID());
         //        return  Z.getOne().shiftLeft(107).decrement();
     }
 

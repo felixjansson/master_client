@@ -13,7 +13,9 @@ public interface PublicParameters {
 
     int getTransformatorID();
 
-    BigInteger getFieldBase();
+    BigInteger getFieldBase(int transformatorID);
+
+    BigInteger getGenerator(int transformatorID);
 
     int getSecurityThreshold();
 }

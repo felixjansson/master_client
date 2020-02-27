@@ -3,17 +3,16 @@ package com.master_thesis.client;
 import cc.redberry.rings.Ring;
 import cc.redberry.rings.Rings;
 import cc.redberry.rings.bigint.BigInteger;
-import cc.redberry.rings.poly.FiniteField;
-import cc.redberry.rings.poly.univar.UnivariatePolynomial;
-import cc.redberry.rings.IntegersZp;
 import ch.qos.logback.classic.Logger;
-import com.fasterxml.jackson.databind.node.BigIntegerNode;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 
@@ -30,12 +29,13 @@ public class HomomorphicHash implements ClientSecretSharing {
 
     @Override
     public Map<URI, SecretShare> shareSecret(int int_secret) {
-        BigInteger base = publicParameters.getFieldBase();
+        BigInteger base = publicParameters.getFieldBase(0);
+        BigInteger generator = publicParameters.getGenerator(0);
         Ring<BigInteger> field = Rings.Zp(base);
         BigInteger secret = BigInteger.valueOf(int_secret);
 
         BigInteger nonce = field.randomElement();
-        BigInteger proofComponent = hash(base, secret.add(nonce));
+        BigInteger proofComponent = hash(base, secret.add(nonce), generator);//.mod(base));
 
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, field);
         List<Server> servers = publicParameters.getServers();
@@ -74,8 +74,7 @@ public class HomomorphicHash implements ClientSecretSharing {
         };
     }
 
-    public BigInteger hash(BigInteger field, BigInteger input) {
-        BigInteger g = BigInteger.valueOf(2);
+    public BigInteger hash(BigInteger field, BigInteger input, BigInteger g) {
         return g.modPow(input, field);
 
 
