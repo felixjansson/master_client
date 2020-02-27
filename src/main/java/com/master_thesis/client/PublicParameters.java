@@ -1,16 +1,19 @@
 package com.master_thesis.client;
 
+import cc.redberry.rings.bigint.BigInteger;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.net.URI;
 import java.util.List;
 
+
 public interface PublicParameters {
 
-    List<URI> getServers();
+    List<Server> getServers();
 
     int getTransformatorID();
 
-    JsonNode registerClient();
+    BigInteger getFieldBase();
 
+    int getSecurityThreshold();
 }

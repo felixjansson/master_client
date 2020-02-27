@@ -1,50 +1,65 @@
 package com.master_thesis.client;
 
+
+import cc.redberry.rings.bigint.BigInteger;
+
 public class SecretShare {
 
-    private int share;
+    private BigInteger share;
     private int clientID;
     private int transformatorID;
-    private int proofComponent;
+    private BigInteger proofComponent;
+    private BigInteger nonce;
 
-    public SecretShare(int share, int clientID, int transformatorID, int proofComponent) {
+    public SecretShare(BigInteger share, BigInteger proofComponent, BigInteger nonce) {
         this.share = share;
-        this.clientID = clientID;
-        this.transformatorID = transformatorID;
         this.proofComponent = proofComponent;
+        this.nonce = nonce;
     }
 
-    public int getShare() {
+
+    public BigInteger getShare() {
         return share;
     }
 
-    public void setShare(int share) {
+    public SecretShare setShare(BigInteger share) {
         this.share = share;
+        return this;
     }
 
     public int getClientID() {
         return clientID;
     }
 
-    public void setClientID(int clientID) {
+    public SecretShare setClientID(int clientID) {
         this.clientID = clientID;
+        return this;
     }
 
     public int getTransformatorID() {
         return transformatorID;
     }
 
-    public void setTransformatorID(int transformatorID) {
+    public SecretShare setTransformatorID(int transformatorID) {
         this.transformatorID = transformatorID;
+        return this;
     }
 
-    public int getProofComponent() {
+    public BigInteger getProofComponent() {
         return proofComponent;
     }
 
-    public void setProofComponent(int proofComponent) {
+    public SecretShare setProofComponent(BigInteger proofComponent) {
         this.proofComponent = proofComponent;
+        return this;
     }
 
+    public BigInteger getNonce() {
+        return nonce;
+    }
 
+    public SecretShare setNonce(BigInteger nonce) {
+        this.nonce = nonce;
+        return this;
+    }
 }

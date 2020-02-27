@@ -5,8 +5,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Qualifier("Dummy")
@@ -21,7 +24,7 @@ public class DummySecretShare implements ClientSecretSharing {
 
     @Override
     @SneakyThrows
-    public ShareTuple shareSecret(int secret) {
+    public Map<URI, SecretShare> shareSecret(int secret) {
         List<Integer> shares = new LinkedList<>();
         int servers = publicParameters.getServers().size();
 //        Math magic
@@ -31,6 +34,6 @@ public class DummySecretShare implements ClientSecretSharing {
             shares.add(share);
         }
         shares.add(secret);
-        return new ShareTuple(shares,1);
+        return new HashMap<>();
     }
 }

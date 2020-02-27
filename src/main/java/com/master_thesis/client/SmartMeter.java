@@ -2,6 +2,7 @@ package com.master_thesis.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -9,6 +10,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 @SpringBootApplication
 public class SmartMeter {
@@ -19,18 +21,16 @@ public class SmartMeter {
 
     private Reader reader;
     private ClientSecretSharing clientSecretSharing;
-    private PublicParameters publicParameters;
     private int clientID;
     private int transformatorID;
     private HttpAdapter httpAdapter;
 
     @Autowired
-    public SmartMeter(Reader reader, ClientSecretSharing clientSecretSharing, PublicParameters publicParameters, HttpAdapter httpAdapter) {
-        this.publicParameters = publicParameters;
+    public SmartMeter(Reader reader, @Qualifier("hash") ClientSecretSharing clientSecretSharing, HttpAdapter httpAdapter) {
         this.reader = reader;
         this.clientSecretSharing = clientSecretSharing;
         this.httpAdapter = httpAdapter;
-        JsonNode jsonNode = publicParameters.registerClient();
+        JsonNode jsonNode = httpAdapter.registerClient();
         this.clientID = jsonNode.get("clientID").asInt();
         this.transformatorID = jsonNode.get("transformatorID").asInt();
     }
@@ -38,28 +38,10 @@ public class SmartMeter {
     @Autowired
     public void run() {
         int val = reader.readValue();
-        List<URI> servers = publicParameters.getServers();
-        ShareTuple shareTuple = clientSecretSharing.shareSecret(val);
-        HashMap<URI, SecretShare> destinationMap = zipToMap(servers, shareTuple);
-        destinationMap.forEach(httpAdapter::sendShare);
+        Map<URI, SecretShare> shareMap = clientSecretSharing.shareSecret(val);
+        shareMap.values().forEach(secretShare -> secretShare.setClientID(clientID).setTransformatorID(transformatorID));
+        shareMap.forEach(httpAdapter::sendShare);
     }
-
-    private HashMap<URI, SecretShare> zipToMap(List<URI> uris, ShareTuple shareTuple) {
-        Iterator<URI> uriIter = uris.iterator();
-        Iterator<Integer> shareIter = shareTuple.shares.iterator();
-        HashMap<URI, SecretShare> map = new HashMap<>();
-
-        while (uriIter.hasNext() && shareIter.hasNext()) {
-            map.put(uriIter.next(), new SecretShare(shareIter.next(), clientID, transformatorID, shareTuple.proofComponent));
-        }
-
-        if (uriIter.hasNext() || shareIter.hasNext()) {
-            throw new RuntimeException("Zip was not finished correctly");
-        }
-
-        return map;
-    }
-
 
 
 }

@@ -1,14 +1,20 @@
 package com.master_thesis.client;
 
+
+import java.math.BigInteger;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 public class ShareTuple {
     
-    final List<Integer> shares;
+    final Map<URI,BigInteger> shares;
     final Integer proofComponent;
+    final BigInteger nonce;
 
-    public ShareTuple(List<Integer> shares, Integer proofComponent) {
+    public ShareTuple(Map<URI,BigInteger> shares, Integer proofComponent, BigInteger nonce) {
         this.shares = shares;
         this.proofComponent = proofComponent;
+        this.nonce = nonce;
     }
 }
