@@ -70,7 +70,7 @@ public class SmartMeter {
     }
 
     private void readAndSendShare() {
-        int val = reader.readValue(clientID);
+        int val = reader.readValue();
         Map<URI, SecretShare> shareMap = clientSecretSharing.shareSecret(val);
         shareMap.values().forEach(secretShare -> secretShare.setClientID(clientID).setTransformatorID(transformatorID));
         shareMap.forEach(httpAdapter::sendShare);

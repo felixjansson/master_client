@@ -9,11 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Component("hash")
@@ -35,19 +33,20 @@ public class HomomorphicHash implements ClientSecretSharing {
         Ring<BigInteger> field = Rings.Zp(base);
         BigInteger secret = BigInteger.valueOf(int_secret);
 
-        BigInteger nonce = BigInteger.valueOf(881);
-//        BigInteger nonce = field.randomElement();
+
+        BigInteger nonce = field.randomElement();
         log.info("base: {}, generator: {}, secret: {}, nonce: {}", base, generator, secret, nonce);
         BigInteger proofComponent = hash(base, secret.add(nonce), generator);//.mod(base));
 
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, field);
         List<Server> servers = publicParameters.getServers();
+        Set<Integer> serverIDs = servers.stream().map(Server::getServerID).collect(Collectors.toSet());
         HashMap<URI, SecretShare> map = new HashMap<>();
         servers.forEach(server -> {
             BigInteger share = polynomial.apply(server.getServerID());
+            share = share.multiply(BigInteger.valueOf(beta(server.getServerID(), serverIDs)));
             map.put(server.getUri(), new SecretShare(share, proofComponent, nonce));
         });
-
         return map;
     }
 
@@ -71,7 +70,7 @@ public class HomomorphicHash implements ClientSecretSharing {
             for (int i = 0; i < coefficients.size(); i++) {
                 BigInteger coefficient = coefficients.get(i);
                 BigInteger polynomial = serverIDBIG.pow(i+1);
-                res = field.add(res, field.multiply(coefficient, polynomial));
+                res = res.add(coefficient.multiply(polynomial));
             }
             return res;
         };
@@ -79,7 +78,17 @@ public class HomomorphicHash implements ClientSecretSharing {
 
     public BigInteger hash(BigInteger field, BigInteger input, BigInteger g) {
         return g.modPow(input, field);
-
-
     }
+
+    public int beta(int serverID, Set<Integer> serverIDs) {
+//        Page 21 Lecture 9 in Krypto
+        return (int) Math.round(serverIDs.stream().mapToDouble(Integer::doubleValue).reduce(1f, (prev, j) -> {
+            if (j == serverID) {
+                return prev;
+            } else {
+                return prev * (j / (j - serverID));
+            }
+        }));
+    }
+
 }

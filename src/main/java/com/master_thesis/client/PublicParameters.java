@@ -1,21 +1,60 @@
 package com.master_thesis.client;
 
 import cc.redberry.rings.bigint.BigInteger;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 
 
-public interface PublicParameters {
+@Component
+@Qualifier("Dummy")
+public class PublicParameters {
 
-    List<Server> getServers();
+    private HttpAdapter httpAdapter;
 
-    int getTransformatorID();
+    @Autowired
+    public PublicParameters(HttpAdapter httpAdapter) {
+        this.httpAdapter = httpAdapter;
+    }
 
-    BigInteger getFieldBase(int transformatorID);
+    @SneakyThrows
+    public List<Server> getServers() {
 
-    BigInteger getGenerator(int transformatorID);
+        HttpRequest httpRequest = HttpRequest.newBuilder(URI.create("http://localhost:4000/api/server/list"))
+                .GET().build();
+        HttpResponse<String> response = HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        List<Server> servers = new ObjectMapper().readValue(response.body(), new TypeReference<>() {
+        });
 
-    int getSecurityThreshold();
+        return servers;
+    }
+
+    public int getTransformatorID() {
+        return 0;
+
+    }
+
+    public BigInteger getGenerator(int transformatorID) {
+        return httpAdapter.getGenerator(transformatorID);
+    }
+
+
+    public BigInteger getFieldBase(int transformatorID) {
+        return httpAdapter.getFieldBase(getTransformatorID());
+    }
+
+    public int getSecurityThreshold() {
+        return httpAdapter.getTSecurity(getTransformatorID());
+    }
+
 }

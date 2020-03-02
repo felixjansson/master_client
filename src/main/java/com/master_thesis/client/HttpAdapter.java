@@ -85,4 +85,12 @@ public class HttpAdapter {
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         return objectMapper.readValue(response.body(),JsonNode.class);
     }
+
+    @SneakyThrows
+    public int getTSecurity(int transformatorID) {
+        URI uri = URI.create("http://localhost:4000/api/setup/t-security/" + transformatorID);
+        HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        return Integer.parseInt(response.body());
+    }
 }
