@@ -13,6 +13,7 @@ import java.util.Queue;
 public class Reader {
 
     private Queue<Integer> queue;
+    private int[] staticInput;
 
     public Reader() {
         try {
@@ -28,10 +29,18 @@ public class Reader {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        assert queue != null;
+        staticInput = queue.stream().mapToInt(Integer::intValue).toArray();
+
     }
 
     public Integer readValue() {
         queue.add(queue.peek());
         return queue.poll();
+    }
+
+    public Integer readValue(int i) {
+        return staticInput[i%staticInput.length];
     }
 }

@@ -29,12 +29,15 @@ public class HomomorphicHash implements ClientSecretSharing {
 
     @Override
     public Map<URI, SecretShare> shareSecret(int int_secret) {
+        log.info("=== Starting new share ===");
         BigInteger base = publicParameters.getFieldBase(0);
         BigInteger generator = publicParameters.getGenerator(0);
         Ring<BigInteger> field = Rings.Zp(base);
         BigInteger secret = BigInteger.valueOf(int_secret);
 
-        BigInteger nonce = field.randomElement();
+        BigInteger nonce = BigInteger.valueOf(881);
+//        BigInteger nonce = field.randomElement();
+        log.info("base: {}, generator: {}, secret: {}, nonce: {}", base, generator, secret, nonce);
         BigInteger proofComponent = hash(base, secret.add(nonce), generator);//.mod(base));
 
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, field);

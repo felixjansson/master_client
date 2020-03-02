@@ -1,11 +1,16 @@
 package com.master_thesis.client;
 
+
 import cc.redberry.rings.bigint.BigInteger;
+import ch.qos.logback.classic.Logger;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -16,20 +21,29 @@ import java.net.http.HttpResponse;
 public class HttpAdapter {
 
     private ObjectMapper objectMapper;
+    private static final Logger log = (Logger) LoggerFactory.getLogger(HttpAdapter.class);
 
     public HttpAdapter() {
         this.objectMapper = new ObjectMapper();
     }
 
-    @SneakyThrows
-    public void sendShare(URI uri, SecretShare information) {
-        HttpRequest request = HttpRequest.newBuilder(uri)
-                .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(information))).build();
 
-        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-        System.out.println(response.body());
+    public void sendShare(URI uri, SecretShare information) {
+        boolean sending = true;
+        while (sending) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder(uri)
+                        .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(information))).build();
+
+                HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+                sending = false;
+            } catch (InterruptedException | IOException e) {
+                log.info("Failed to send. {}", e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -55,5 +69,20 @@ public class HttpAdapter {
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         return new BigInteger(response.body());
+    }
+
+    @SneakyThrows
+    public void deleteClients() {
+        URI uri = URI.create("http://localhost:4000/api/client");
+        HttpRequest request = HttpRequest.newBuilder(uri).DELETE().build();
+        HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
+    }
+
+    @SneakyThrows
+    public JsonNode listClients(int transformatorID) {
+        URI uri = URI.create("http://localhost:4000/api/client/list");
+        HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        return objectMapper.readValue(response.body(),JsonNode.class);
     }
 }
