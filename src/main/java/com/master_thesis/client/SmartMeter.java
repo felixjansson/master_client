@@ -25,7 +25,7 @@ public class SmartMeter {
     private Scanner scanner;
 
     @Autowired
-    public SmartMeter(Reader reader, @Qualifier("hash") ClientSecretSharing clientSecretSharing, HttpAdapter httpAdapter) {
+    public SmartMeter(Reader reader, @Qualifier("rsa") ClientSecretSharing clientSecretSharing, HttpAdapter httpAdapter) {
         this.reader = reader;
         this.clientSecretSharing = clientSecretSharing;
         this.httpAdapter = httpAdapter;

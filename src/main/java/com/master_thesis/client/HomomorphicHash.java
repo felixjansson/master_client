@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @Component("hash")
 public class HomomorphicHash implements ClientSecretSharing {
 
-    private PublicParameters publicParameters;
+    protected PublicParameters publicParameters;
     private static final Logger log = (Logger) LoggerFactory.getLogger(HomomorphicHash.class);
 
     @Autowired
@@ -50,7 +50,7 @@ public class HomomorphicHash implements ClientSecretSharing {
         return map;
     }
 
-    private Function<Integer, BigInteger> generatePolynomial(int secret, Ring<BigInteger> field){
+    protected Function<Integer, BigInteger> generatePolynomial(int secret, Ring<BigInteger> field) {
         int t = publicParameters.getSecurityThreshold();
         StringBuilder logString = new StringBuilder("Polynomial used: ").append(secret);
         ArrayList<BigInteger> coefficients = new ArrayList<>();
@@ -69,7 +69,7 @@ public class HomomorphicHash implements ClientSecretSharing {
             BigInteger res = field.valueOf(secret);
             for (int i = 0; i < coefficients.size(); i++) {
                 BigInteger coefficient = coefficients.get(i);
-                BigInteger polynomial = serverIDBIG.pow(i+1);
+                BigInteger polynomial = serverIDBIG.pow(i + 1);
                 res = res.add(coefficient.multiply(polynomial));
             }
             return res;

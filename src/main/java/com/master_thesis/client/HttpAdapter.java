@@ -3,7 +3,6 @@ package com.master_thesis.client;
 
 import cc.redberry.rings.bigint.BigInteger;
 import ch.qos.logback.classic.Logger;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
@@ -32,15 +31,17 @@ public class HttpAdapter {
         boolean sending = true;
         while (sending) {
             try {
+                String jsonObject = objectMapper.writeValueAsString(information);
                 HttpRequest request = HttpRequest.newBuilder(uri)
                         .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
                         .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(information))).build();
+                        .POST(HttpRequest.BodyPublishers.ofString(jsonObject)).build();
 
                 HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
                 sending = false;
+                log.debug("To {}: {}", uri, jsonObject);
             } catch (InterruptedException | IOException e) {
-                log.info("Failed to send. {}", e.getMessage());
+                log.info("Failed to send to {}: {}", uri, e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -48,11 +49,11 @@ public class HttpAdapter {
 
 
     @SneakyThrows
-    public JsonNode registerClient(){
+    public JsonNode registerClient() {
         URI uri = URI.create("http://localhost:4000/api/client/register");
         HttpRequest request = HttpRequest.newBuilder(uri).POST(HttpRequest.BodyPublishers.noBody()).build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-        return objectMapper.readValue(response.body(),JsonNode.class);
+        return objectMapper.readValue(response.body(), JsonNode.class);
     }
 
     @SneakyThrows
@@ -83,7 +84,7 @@ public class HttpAdapter {
         URI uri = URI.create("http://localhost:4000/api/client/list");
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-        return objectMapper.readValue(response.body(),JsonNode.class);
+        return objectMapper.readValue(response.body(), JsonNode.class);
     }
 
     @SneakyThrows

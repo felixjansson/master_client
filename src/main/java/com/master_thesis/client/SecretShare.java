@@ -2,14 +2,24 @@ package com.master_thesis.client;
 
 
 import cc.redberry.rings.bigint.BigInteger;
+import ch.qos.logback.classic.Logger;
+import org.ejml.simple.SimpleMatrix;
+import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 public class SecretShare {
+    private static final Logger log = (Logger) LoggerFactory.getLogger(HomomorphicHash.class);
 
     private BigInteger share;
     private int clientID;
     private int transformatorID;
     private BigInteger proofComponent;
     private BigInteger nonce;
+    private SimpleMatrix matrixOfClient;
+    private SimpleMatrix skShare;
 
     public SecretShare(BigInteger share, BigInteger proofComponent, BigInteger nonce) {
         this.share = share;
@@ -62,4 +72,34 @@ public class SecretShare {
         this.nonce = nonce;
         return this;
     }
+
+    public byte[] getMatrixOfClient() {
+        return getObjectAsByteArray(matrixOfClient);
+    }
+
+    public void setMatrixOfClient(SimpleMatrix matrixOfClient) {
+        this.matrixOfClient = matrixOfClient;
+    }
+
+    public byte[] getSkShare() {
+        return getObjectAsByteArray(skShare);
+    }
+
+    public void setSkShare(SimpleMatrix skShare) {
+        this.skShare = skShare;
+    }
+
+    private byte[] getObjectAsByteArray(Object o) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeObject(o);
+            oos.flush();
+            oos.close();
+            baos.close();
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+        return baos.toByteArray();
+    }
+
 }
