@@ -21,7 +21,7 @@ public class SecretShare {
     private SimpleMatrix matrixOfClient;
     private SimpleMatrix skShare;
     private int publicKey;
-    private int rsaN;
+    private BigInteger rsaN;
 
     public SecretShare(BigInteger share, BigInteger proofComponent, BigInteger nonce) {
         this.share = share;
@@ -37,11 +37,11 @@ public class SecretShare {
         this.publicKey = publicKey;
     }
 
-    public int getRsaN() {
+    public BigInteger getRsaN() {
         return rsaN;
     }
 
-    public void setRsaN(int rsaN) {
+    public void setRsaN(BigInteger rsaN) {
         this.rsaN = rsaN;
     }
 
