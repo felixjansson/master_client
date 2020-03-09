@@ -39,7 +39,7 @@ public class HttpAdapter {
 
                 HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
                 sending = false;
-                log.debug("To {}: {}", uri, jsonObject);
+                log.info("To {}: {}", uri, jsonObject);
             } catch (InterruptedException | IOException e) {
                 log.info("Failed to send to {}: {}", uri, e.getMessage());
                 e.printStackTrace();

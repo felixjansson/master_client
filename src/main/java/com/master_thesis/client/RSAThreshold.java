@@ -42,6 +42,8 @@ public class RSAThreshold extends HomomorphicHash {
         shares.forEach((uri, secretShare) -> {
             secretShare.setMatrixOfClient(matrixOfClient);
             secretShare.setSkShare(skShares);
+            secretShare.setRsaN(rsaN.intValue());
+            secretShare.setPublicKey(publicKey.intValue());
         });
 
         return shares;
