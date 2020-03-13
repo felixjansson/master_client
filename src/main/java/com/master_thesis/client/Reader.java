@@ -17,15 +17,15 @@ public class Reader {
 
     public Reader() {
         try {
-            File file = new File("src/Demo.txt");    //creates a new file instance
-            FileReader fr = new FileReader(file);   //reads the file
-            BufferedReader br = new BufferedReader(fr);  //creates a buffering character input stream
-            queue = new LinkedList<>();    //constructs a string buffer with no characters
+            File file = new File("src/Demo.txt");
+            FileReader fr = new FileReader(file);
+            BufferedReader br = new BufferedReader(fr);
+            queue = new LinkedList<>();
             String line;
             while ((line = br.readLine()) != null) {
-                queue.add(Integer.parseInt(line));      //appends line to string buffer
+                queue.add(Integer.parseInt(line));
             }
-            fr.close();    //closes the stream and release the resources
+            fr.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

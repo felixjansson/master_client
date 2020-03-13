@@ -1,35 +1,29 @@
 package com.master_thesis.client;
 
 import cc.redberry.rings.bigint.BigInteger;
-import ch.qos.logback.classic.Logger;
 import org.ejml.data.DMatrixRMaj;
 import org.ejml.dense.row.SingularOps_DDRM;
 import org.ejml.simple.SimpleMatrix;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Map;
 
 @Component("rsa")
 public class RSAThreshold extends HomomorphicHash {
     private final static SecureRandom random = new SecureRandom();
-    private final static BigInteger zero = BigInteger.ZERO;
     private final static BigInteger one = BigInteger.ONE;
-    private final static BigInteger two = BigInteger.TWO;
-    private static final Logger log = (Logger) LoggerFactory.getLogger(RSAThreshold.class);
 
     private static final int KEY_BIT_LENGTH = 12;
+    private static final int RSA_PRIME_BIT_LENGTH = 12;
 
     private BigInteger privateKey;
     private BigInteger publicKey;
     private BigInteger rsaN;
-    private BigInteger fieldBase;
     private int securityThreshold;
-    private BigInteger qPrime;
-    private BigInteger pPrime;
     private BigInteger rsaNPrime;
 
 
@@ -40,19 +34,18 @@ public class RSAThreshold extends HomomorphicHash {
 
     @Override
     public Map<URI, SecretShare> shareSecret(int int_secret) {
-        generateRSAPrimes(32);
         Map<URI, SecretShare> shares = super.shareSecret(int_secret);
-        fieldBase = publicParameters.getFieldBase(publicParameters.getTransformatorID());
+        BigInteger fieldBase = publicParameters.getFieldBase(publicParameters.getTransformatorID());
         securityThreshold = publicParameters.getSecurityThreshold();
-        SimpleMatrix matrixOfClient = generateMatrixOfClient();
+        generateRSAPrimes(fieldBase);
+        SimpleMatrix matrixOfClient = generateMatrixOfClient(fieldBase);
         generateRSAKeys(BigInteger.valueOf(Math.round(matrixOfClient.rows(0, matrixOfClient.numCols()).determinant())));
-        SimpleMatrix skv = generateSKVector();
-        log.info("\nA: \n{}\nSKV:\n{}", matrixOfClient, skv);
+        SimpleMatrix skv = generateSKVector(fieldBase);
         SimpleMatrix skShares = matrixOfClient.mult(skv);
 
         shares.forEach((uri, secretShare) -> {
             secretShare.setMatrixOfClient(matrixOfClient);
-            secretShare.setSkShare(skShares); // TODO: 2020-03-11 Could be limited to 1 share to each server if they collaborate
+            secretShare.setSkShare(skShares);
             secretShare.setRsaN(rsaN);
             secretShare.setPublicKey(publicKey.intValue());
         });
@@ -60,10 +53,10 @@ public class RSAThreshold extends HomomorphicHash {
         return shares;
     }
 
-    private SimpleMatrix generateSKVector() {
+    private SimpleMatrix generateSKVector(BigInteger fieldBase) {
         SimpleMatrix skv = new SimpleMatrix(securityThreshold, 1);
         for (int i = 1; i < securityThreshold; i++) {
-            int value = getRandomElementInField();
+            int value = getRandomElementInField(fieldBase);
             skv.set(i, 0, value);
         }
         skv.set(0, 0, privateKey.intValue());
@@ -73,14 +66,14 @@ public class RSAThreshold extends HomomorphicHash {
     }
 
     // TODO: 2020-03-09 What should we do when 'm' or 't' is zero? 
-    private SimpleMatrix generateMatrixOfClient() {
+    private SimpleMatrix generateMatrixOfClient(BigInteger fieldBase) {
         int m = publicParameters.getServers().size();
         DMatrixRMaj dMatrixRMaj = new DMatrixRMaj(m, securityThreshold);
         boolean isFullRank = false;
         while ((m != 0 && securityThreshold != 0) && !isFullRank) {
             for (int row = 0; row < m; row++) {
                 for (int col = 0; col < securityThreshold; col++) {
-                    int value = getRandomElementInField();
+                    int value = getRandomElementInField(fieldBase);
                     dMatrixRMaj.set(row, col, value);
                 }
             }
@@ -90,24 +83,37 @@ public class RSAThreshold extends HomomorphicHash {
         return new SimpleMatrix(dMatrixRMaj);
     }
 
-    private int getRandomElementInField() {
+    private int getRandomElementInField(BigInteger fieldBase) {
         return Math.abs(random.nextInt()) % fieldBase.intValue();
     }
 
 
-    // TODO: 2020-03-04 What happens if our message >= rsaN? Verify that the rsaN is exactly n bits.
-    void generateRSAPrimes(int n) {
-        // TODO: 2020-03-04 Choose publicKey s.t. publicKey >> Combination(n,t)
-        rsaNPrime = null;
-        qPrime = BigInteger.valueOf(11);
-        pPrime = BigInteger.valueOf(41);
-        //pPrime = BigInteger.probablePrime(n / 2, random);
-        //qPrime = BigInteger.probablePrime(n / 2, random);
-        rsaNPrime = pPrime.multiply(qPrime);
+    void generateRSAPrimes(BigInteger fieldBase) {
+        BigInteger[] pPair = generateConstrainedSafePrimePair(fieldBase, new BigInteger[]{});
+        BigInteger[] qPair = generateConstrainedSafePrimePair(fieldBase, pPair);
+        rsaNPrime = pPair[0].multiply(qPair[0]);
+        rsaN = pPair[1].multiply(qPair[1]);
+    }
 
-        BigInteger p = pPrime.multiply(two).add(one);
-        BigInteger q = qPrime.multiply(two).add(one);
-        rsaN = p.multiply(q);
+    private BigInteger[] generateConstrainedSafePrimePair(BigInteger minValue, BigInteger[] forbiddenValues) {
+        BigInteger[] pair;
+        boolean isSmallerThanMinValue, isForbidden;
+
+        do {
+            pair = generateSafePrimePair();
+            isSmallerThanMinValue = pair[1].max(minValue).equals(minValue);
+            isForbidden = Arrays.equals(pair, forbiddenValues);
+        } while (isForbidden || isSmallerThanMinValue);
+        return pair;
+    }
+
+    private BigInteger[] generateSafePrimePair() {
+        BigInteger p, q;
+        do {
+            p = new BigInteger(RSA_PRIME_BIT_LENGTH, 16, random);
+            q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
+        } while (!q.isProbablePrime(16));
+        return new BigInteger[]{q, p};
     }
 
     private void generateRSAKeys(BigInteger determinant) {
@@ -116,7 +122,6 @@ public class RSAThreshold extends HomomorphicHash {
             publicKey = new BigInteger(KEY_BIT_LENGTH, 16, random); // 2^16 + 1 = 65537, large enough?
         }
         privateKey = publicKey.modInverse(rsaNPrime);
-        log.info("Keys: pk: {} sk: {}", publicKey, privateKey);
     }
 
 }

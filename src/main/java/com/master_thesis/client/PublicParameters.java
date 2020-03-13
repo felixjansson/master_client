@@ -2,7 +2,6 @@ package com.master_thesis.client;
 
 import cc.redberry.rings.bigint.BigInteger;
 import com.fasterxml.jackson.core.type.TypeReference;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,10 +32,8 @@ public class PublicParameters {
         HttpRequest httpRequest = HttpRequest.newBuilder(URI.create("http://localhost:4000/api/server/list"))
                 .GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
-        List<Server> servers = new ObjectMapper().readValue(response.body(), new TypeReference<>() {
+        return new ObjectMapper().readValue(response.body(), new TypeReference<>() {
         });
-
-        return servers;
     }
 
     public int getTransformatorID() {

@@ -35,7 +35,7 @@ public class HomomorphicHash implements ClientSecretSharing {
 
         BigInteger nonce = field.randomElement();
         log.info("base: {}, generator: {}, secret: {}, nonce: {}", base, generator, secret, nonce);
-        BigInteger proofComponent = hash(base, secret.add(nonce), generator);//.mod(base));
+        BigInteger proofComponent = hash(base, secret.add(nonce), generator);
 
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, field);
         List<Server> servers = publicParameters.getServers();
@@ -80,7 +80,6 @@ public class HomomorphicHash implements ClientSecretSharing {
     }
 
     public int beta(int serverID, Set<Integer> serverIDs) {
-//        Page 21 Lecture 9 in Krypto
         return (int) Math.round(serverIDs.stream().mapToDouble(Integer::doubleValue).reduce(1f, (prev, j) -> {
             if (j == serverID) {
                 return prev;
