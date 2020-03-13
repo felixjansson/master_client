@@ -33,7 +33,6 @@ public class HomomorphicHash implements ClientSecretSharing {
         Ring<BigInteger> field = Rings.Zp(base);
         BigInteger secret = BigInteger.valueOf(int_secret);
 
-
         BigInteger nonce = field.randomElement();
         log.info("base: {}, generator: {}, secret: {}, nonce: {}", base, generator, secret, nonce);
         BigInteger proofComponent = hash(base, secret.add(nonce), generator);//.mod(base));

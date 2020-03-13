@@ -1,9 +1,11 @@
 package com.master_thesis.client;
 
 import cc.redberry.rings.bigint.BigInteger;
+import ch.qos.logback.classic.Logger;
 import org.ejml.data.DMatrixRMaj;
 import org.ejml.dense.row.SingularOps_DDRM;
 import org.ejml.simple.SimpleMatrix;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,42 +19,45 @@ public class RSAThreshold extends HomomorphicHash {
     private final static BigInteger zero = BigInteger.ZERO;
     private final static BigInteger one = BigInteger.ONE;
     private final static BigInteger two = BigInteger.TWO;
+    private static final Logger log = (Logger) LoggerFactory.getLogger(RSAThreshold.class);
+
+    private static final int KEY_BIT_LENGTH = 12;
+
     private BigInteger privateKey;
     private BigInteger publicKey;
     private BigInteger rsaN;
     private BigInteger fieldBase;
     private int securityThreshold;
+    private BigInteger qPrime;
+    private BigInteger pPrime;
+    private BigInteger rsaNPrime;
 
 
     @Autowired
     public RSAThreshold(PublicParameters publicParameters) {
         super(publicParameters);
-        generateRSAKeys(32);
     }
 
     @Override
     public Map<URI, SecretShare> shareSecret(int int_secret) {
+        generateRSAPrimes(32);
         Map<URI, SecretShare> shares = super.shareSecret(int_secret);
         fieldBase = publicParameters.getFieldBase(publicParameters.getTransformatorID());
         securityThreshold = publicParameters.getSecurityThreshold();
-        SimpleMatrix skv = generateSKVector();
         SimpleMatrix matrixOfClient = generateMatrixOfClient();
+        generateRSAKeys(BigInteger.valueOf(Math.round(matrixOfClient.rows(0, matrixOfClient.numCols()).determinant())));
+        SimpleMatrix skv = generateSKVector();
+        log.info("\nA: \n{}\nSKV:\n{}", matrixOfClient, skv);
         SimpleMatrix skShares = matrixOfClient.mult(skv);
-        putElementsInField(skShares);
+
         shares.forEach((uri, secretShare) -> {
             secretShare.setMatrixOfClient(matrixOfClient);
-            secretShare.setSkShare(skShares);
+            secretShare.setSkShare(skShares); // TODO: 2020-03-11 Could be limited to 1 share to each server if they collaborate
             secretShare.setRsaN(rsaN);
             secretShare.setPublicKey(publicKey.intValue());
         });
 
         return shares;
-    }
-
-    private void putElementsInField(SimpleMatrix skShares) {
-        for (int i = 0; i < skShares.numRows(); i++) {
-            skShares.set(i, 0, skShares.get(i) % fieldBase.intValue());
-        }
     }
 
     private SimpleMatrix generateSKVector() {
@@ -69,7 +74,7 @@ public class RSAThreshold extends HomomorphicHash {
 
     // TODO: 2020-03-09 What should we do when 'm' or 't' is zero? 
     private SimpleMatrix generateMatrixOfClient() {
-        int m = 5;//publicParameters.getServers().size();
+        int m = publicParameters.getServers().size();
         DMatrixRMaj dMatrixRMaj = new DMatrixRMaj(m, securityThreshold);
         boolean isFullRank = false;
         while ((m != 0 && securityThreshold != 0) && !isFullRank) {
@@ -91,32 +96,27 @@ public class RSAThreshold extends HomomorphicHash {
 
 
     // TODO: 2020-03-04 What happens if our message >= rsaN? Verify that the rsaN is exactly n bits.
-    private void generateRSAKeys(int n) {
+    void generateRSAPrimes(int n) {
         // TODO: 2020-03-04 Choose publicKey s.t. publicKey >> Combination(n,t)
-        publicKey = new BigInteger("7"); // 2^16 + 1 = 65537, large enough?
-        BigInteger nPrime = null;
-        BigInteger qPrime = null;
-        BigInteger pPrime = null;
-        boolean isCoprime = false;
-        while (nPrime == null || !isCoprime) {
-            pPrime = BigInteger.probablePrime(n / 2, random);
-            qPrime = BigInteger.probablePrime(n / 2, random);
-            nPrime = pPrime.multiply(qPrime);
-            isCoprime = gcd(nPrime, publicKey).equals(one);
-        }
+        rsaNPrime = null;
+        qPrime = BigInteger.valueOf(11);
+        pPrime = BigInteger.valueOf(41);
+        //pPrime = BigInteger.probablePrime(n / 2, random);
+        //qPrime = BigInteger.probablePrime(n / 2, random);
+        rsaNPrime = pPrime.multiply(qPrime);
 
         BigInteger p = pPrime.multiply(two).add(one);
         BigInteger q = qPrime.multiply(two).add(one);
         rsaN = p.multiply(q);
-        privateKey = publicKey.modInverse(nPrime);
     }
 
-
-    private BigInteger gcd(BigInteger a, BigInteger b) {
-        if (b.equals(zero)) {
-            return a;
+    private void generateRSAKeys(BigInteger determinant) {
+        publicKey = new BigInteger(KEY_BIT_LENGTH, 16, random); // 2^16 + 1 = 65537, large enough?
+        while (!determinant.gcd(publicKey).equals(one)) {
+            publicKey = new BigInteger(KEY_BIT_LENGTH, 16, random); // 2^16 + 1 = 65537, large enough?
         }
-        return gcd(b, a.mod(b));
+        privateKey = publicKey.modInverse(rsaNPrime);
+        log.info("Keys: pk: {} sk: {}", publicKey, privateKey);
     }
 
 }
