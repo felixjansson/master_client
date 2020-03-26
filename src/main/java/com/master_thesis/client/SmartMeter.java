@@ -1,8 +1,9 @@
 package com.master_thesis.client;
 
+import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -13,24 +14,27 @@ import java.util.Scanner;
 @SpringBootApplication
 public class SmartMeter {
 
-    public static void main(String[] args) {
-        SpringApplication.run(SmartMeter.class, args);
-    }
-
+    private static final Logger log = (Logger) LoggerFactory.getLogger(SmartMeter.class);
     private Reader reader;
-    private ClientSecretSharing clientSecretSharing;
+    private int fid;
     private int clientID;
-    private int transformatorID;
+    private RSAThreshold clientSecretSharing;
     private HttpAdapter httpAdapter;
     private Scanner scanner;
+    private int substationID;
+
 
     @Autowired
-    public SmartMeter(Reader reader, @Qualifier("rsa") ClientSecretSharing clientSecretSharing, HttpAdapter httpAdapter) {
+    public SmartMeter(Reader reader, RSAThreshold clientSecretSharing, HttpAdapter httpAdapter) {
         this.reader = reader;
         this.clientSecretSharing = clientSecretSharing;
         this.httpAdapter = httpAdapter;
         register();
         scanner = new Scanner(System.in);
+    }
+
+    public static void main(String[] args) {
+        SpringApplication.run(SmartMeter.class, args);
     }
 
     @Autowired
@@ -66,24 +70,40 @@ public class SmartMeter {
     private void register() {
         JsonNode jsonNode = httpAdapter.registerClient();
         this.clientID = jsonNode.get("clientID").asInt();
-        this.transformatorID = jsonNode.get("transformatorID").asInt();
+        this.substationID = jsonNode.get("substationID").asInt();
+        this.fid = jsonNode.get("fid").asInt();
     }
 
     private void readAndSendShare() {
         int val = reader.readValue();
-        Map<URI, SecretShare> shareMap = clientSecretSharing.shareSecret(val);
-        shareMap.values().forEach(secretShare -> secretShare.setClientID(clientID).setTransformatorID(transformatorID));
-        shareMap.forEach(httpAdapter::sendShare);
+        log.info("=== Starting new share fid:{} ===", fid);
+        ShareInformation shareInfo = clientSecretSharing.shareSecret(val);
+        shareInfo.setFid(fid).setClientID(clientID).setSubstationID(substationID);
+
+        Map<URI, ServerShare> shareMap = shareInfo.getServerShares();
+        shareMap.forEach(httpAdapter::sendServerShare);
+
+        httpAdapter.sendNonce(shareInfo);
+
+        newFid();
     }
 
     private String listClients() {
-        JsonNode clients = httpAdapter.listClients(transformatorID);
-        JsonNode clientsAtTransformator = clients.get(Integer.toString(transformatorID));
+        JsonNode clients = httpAdapter.listClients(substationID);
+        JsonNode clientsAtSubstation = clients.get(Integer.toString(substationID));
         StringBuilder sb = new StringBuilder("Clients: ");
-        clientsAtTransformator.elements().forEachRemaining(node -> {
+        clientsAtSubstation.elements().forEachRemaining(node -> {
             sb.append(node.get("clientID")).append(", ");
         });
         return sb.toString();
+    }
 
+    private void newFid() {
+        fid++;
+        int coordinatorFid = httpAdapter.updateFid(substationID, clientID, fid);
+        if (fid != coordinatorFid) {
+            log.info("Fid was not updated as expected. Client expected fid to be {} but server is at {}. Updating fid in client!", fid, coordinatorFid);
+            fid = coordinatorFid;
+        }
     }
 }

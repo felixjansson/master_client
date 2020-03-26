@@ -14,6 +14,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Component
@@ -27,46 +29,30 @@ public class HttpAdapter {
     }
 
 
-    public void sendShare(URI uri, SecretShare information) {
-        boolean sending = true;
-        while (sending) {
-            try {
-                String jsonObject = objectMapper.writeValueAsString(information);
-                HttpRequest request = HttpRequest.newBuilder(uri)
-                        .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(jsonObject)).build();
-
-                HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-                sending = false;
-                log.info("To {}: {}", uri, jsonObject);
-            } catch (InterruptedException | IOException e) {
-                log.info("Failed to send to {}: {}", uri, e.getMessage());
-                e.printStackTrace();
-            }
-        }
+    public void sendServerShare(URI uri, ServerShare information) {
+        postRequest(uri, information);
     }
-
 
     @SneakyThrows
     public JsonNode registerClient() {
         URI uri = URI.create("http://localhost:4000/api/client/register");
         HttpRequest request = HttpRequest.newBuilder(uri).POST(HttpRequest.BodyPublishers.noBody()).build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        log.info(response.body());
         return objectMapper.readValue(response.body(), JsonNode.class);
     }
 
     @SneakyThrows
-    public BigInteger getFieldBase(int transformatorID) {
-        URI uri = URI.create("http://localhost:4000/api/setup/fieldBase/" + transformatorID);
+    public BigInteger getFieldBase(int substationID) {
+        URI uri = URI.create("http://localhost:4000/api/setup/fieldBase/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         return new BigInteger(response.body());
     }
 
     @SneakyThrows
-    public BigInteger getGenerator(int transformatorID) {
-        URI uri = URI.create("http://localhost:4000/api/setup/generator/" + transformatorID);
+    public BigInteger getGenerator(int substationID) {
+        URI uri = URI.create("http://localhost:4000/api/setup/generator/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         return new BigInteger(response.body());
@@ -80,7 +66,7 @@ public class HttpAdapter {
     }
 
     @SneakyThrows
-    public JsonNode listClients(int transformatorID) {
+    public JsonNode listClients(int substationID) {
         URI uri = URI.create("http://localhost:4000/api/client/list");
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -88,10 +74,51 @@ public class HttpAdapter {
     }
 
     @SneakyThrows
-    public int getTSecurity(int transformatorID) {
-        URI uri = URI.create("http://localhost:4000/api/setup/t-security/" + transformatorID);
+    public int getTSecurity(int substationID) {
+        URI uri = URI.create("http://localhost:4000/api/setup/t-security/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         return Integer.parseInt(response.body());
+    }
+
+    public void sendNonce(ShareInformation shareInfo) {
+        URI uri = URI.create("http://localhost:4000/lastClient/newNonce");
+        postRequest(uri, shareInfo.removeServerShare());
+    }
+
+    @SneakyThrows
+    private String postRequest(URI uri, Object body) {
+        boolean sending = true;
+        String jsonObject = objectMapper.writeValueAsString(body);
+        String responseBody = null;
+        while (sending) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder(uri)
+                        .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(jsonObject)).build();
+
+                HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+                sending = false;
+                log.debug("To {}: {}", uri, jsonObject);
+                log.debug("Got answer: {}", response.body());
+                responseBody = response.body();
+            } catch (InterruptedException | IOException e) {
+                log.error("Failed to send to {}: {}", uri, e.getMessage());
+                e.printStackTrace();
+                Thread.sleep(2000);
+            }
+        }
+        return responseBody;
+    }
+
+    public int updateFid(int substationID, int clientID, int fid) {
+        URI uri = URI.create("http://localhost:4000/api/client/fid");
+        Map<String, Integer> body = new HashMap<>();
+        body.put("substationID", substationID);
+        body.put("clientID", clientID);
+        body.put("fid", fid);
+        String response = postRequest(uri, body);
+        return Integer.parseInt(response);
     }
 }

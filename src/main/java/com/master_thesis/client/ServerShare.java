@@ -10,23 +10,22 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
-public class SecretShare {
-    private static final Logger log = (Logger) LoggerFactory.getLogger(HomomorphicHash.class);
+public class ServerShare {
+    private static final Logger log = (Logger) LoggerFactory.getLogger(ServerShare.class);
 
     private BigInteger share;
     private int clientID;
-    private int transformatorID;
+    private int substationID;
     private BigInteger proofComponent;
-    private BigInteger nonce;
     private SimpleMatrix matrixOfClient;
     private SimpleMatrix skShare;
     private int publicKey;
     private BigInteger rsaN;
+    private int fid;
 
-    public SecretShare(BigInteger share, BigInteger proofComponent, BigInteger nonce) {
+    public ServerShare(BigInteger share, BigInteger proofComponent) {
         this.share = share;
         this.proofComponent = proofComponent;
-        this.nonce = nonce;
     }
 
     public int getPublicKey() {
@@ -49,7 +48,7 @@ public class SecretShare {
         return share;
     }
 
-    public SecretShare setShare(BigInteger share) {
+    public ServerShare setShare(BigInteger share) {
         this.share = share;
         return this;
     }
@@ -58,17 +57,17 @@ public class SecretShare {
         return clientID;
     }
 
-    public SecretShare setClientID(int clientID) {
+    public ServerShare setClientID(int clientID) {
         this.clientID = clientID;
         return this;
     }
 
-    public int getTransformatorID() {
-        return transformatorID;
+    public int getSubstationID() {
+        return substationID;
     }
 
-    public SecretShare setTransformatorID(int transformatorID) {
-        this.transformatorID = transformatorID;
+    public ServerShare setSubstationID(int substationID) {
+        this.substationID = substationID;
         return this;
     }
 
@@ -76,17 +75,8 @@ public class SecretShare {
         return proofComponent;
     }
 
-    public SecretShare setProofComponent(BigInteger proofComponent) {
+    public ServerShare setProofComponent(BigInteger proofComponent) {
         this.proofComponent = proofComponent;
-        return this;
-    }
-
-    public BigInteger getNonce() {
-        return nonce;
-    }
-
-    public SecretShare setNonce(BigInteger nonce) {
-        this.nonce = nonce;
         return this;
     }
 
@@ -119,4 +109,11 @@ public class SecretShare {
         return baos.toByteArray();
     }
 
+    public int getFid() {
+        return fid;
+    }
+
+    public void setFid(int fid) {
+        this.fid = fid;
+    }
 }

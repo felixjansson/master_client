@@ -9,13 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
 @Component("hash")
-public class HomomorphicHash implements ClientSecretSharing {
+public class HomomorphicHash {
 
     protected PublicParameters publicParameters;
     private static final Logger log = (Logger) LoggerFactory.getLogger(HomomorphicHash.class);
@@ -25,11 +28,10 @@ public class HomomorphicHash implements ClientSecretSharing {
         this.publicParameters = publicParameters;
     }
 
-    @Override
-    public Map<URI, SecretShare> shareSecret(int int_secret) {
-        log.info("=== Starting new share ===");
-        BigInteger base = publicParameters.getFieldBase(0);
-        BigInteger generator = publicParameters.getGenerator(0);
+    public ShareInformation shareSecret(int int_secret) {
+        int substationID = publicParameters.getSubstationID();
+        BigInteger base = publicParameters.getFieldBase(substationID);
+        BigInteger generator = publicParameters.getGenerator(substationID);
         Ring<BigInteger> field = Rings.Zp(base);
         BigInteger secret = BigInteger.valueOf(int_secret);
 
@@ -40,13 +42,13 @@ public class HomomorphicHash implements ClientSecretSharing {
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, field);
         List<Server> servers = publicParameters.getServers();
         Set<Integer> serverIDs = servers.stream().map(Server::getServerID).collect(Collectors.toSet());
-        HashMap<URI, SecretShare> map = new HashMap<>();
+        HashMap<URI, ServerShare> map = new HashMap<>();
         servers.forEach(server -> {
             BigInteger share = polynomial.apply(server.getServerID());
             share = share.multiply(BigInteger.valueOf(beta(server.getServerID(), serverIDs)));
-            map.put(server.getUri(), new SecretShare(share, proofComponent, nonce));
+            map.put(server.getUri(), new ServerShare(share, proofComponent));
         });
-        return map;
+        return new ShareInformation(map, nonce);
     }
 
     protected Function<Integer, BigInteger> generatePolynomial(int secret, Ring<BigInteger> field) {

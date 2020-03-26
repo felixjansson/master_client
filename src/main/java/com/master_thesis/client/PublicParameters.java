@@ -36,22 +36,22 @@ public class PublicParameters {
         });
     }
 
-    public int getTransformatorID() {
+    public int getSubstationID() {
         return 0;
 
     }
 
-    public BigInteger getGenerator(int transformatorID) {
-        return httpAdapter.getGenerator(transformatorID);
+    public BigInteger getGenerator(int substationID) {
+        return httpAdapter.getGenerator(substationID);
     }
 
 
-    public BigInteger getFieldBase(int transformatorID) {
-        return httpAdapter.getFieldBase(getTransformatorID());
+    public BigInteger getFieldBase(int substationID) {
+        return httpAdapter.getFieldBase(getSubstationID());
     }
 
     public int getSecurityThreshold() {
-        return httpAdapter.getTSecurity(getTransformatorID());
+        return httpAdapter.getTSecurity(getSubstationID());
     }
 
 }

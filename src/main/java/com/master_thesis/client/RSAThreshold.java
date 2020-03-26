@@ -33,9 +33,10 @@ public class RSAThreshold extends HomomorphicHash {
     }
 
     @Override
-    public Map<URI, SecretShare> shareSecret(int int_secret) {
-        Map<URI, SecretShare> shares = super.shareSecret(int_secret);
-        BigInteger fieldBase = publicParameters.getFieldBase(publicParameters.getTransformatorID());
+    public ShareInformation shareSecret(int int_secret) {
+        ShareInformation sharesInfo = super.shareSecret(int_secret);
+        Map<URI, ServerShare> shares = sharesInfo.getServerShares();
+        BigInteger fieldBase = publicParameters.getFieldBase(publicParameters.getSubstationID());
         securityThreshold = publicParameters.getSecurityThreshold();
         generateRSAPrimes(fieldBase);
         SimpleMatrix matrixOfClient = generateMatrixOfClient(fieldBase);
@@ -50,7 +51,7 @@ public class RSAThreshold extends HomomorphicHash {
             secretShare.setPublicKey(publicKey.intValue());
         });
 
-        return shares;
+        return sharesInfo;
     }
 
     private SimpleMatrix generateSKVector(BigInteger fieldBase) {
