@@ -118,11 +118,12 @@ public class RSAThreshold extends HomomorphicHash {
     }
 
     private void generateRSAKeys(BigInteger determinant) {
-        publicKey = new BigInteger(KEY_BIT_LENGTH, 16, random); // 2^16 + 1 = 65537, large enough?
-        while (!determinant.gcd(publicKey).equals(one)) {
-            publicKey = new BigInteger(KEY_BIT_LENGTH, 16, random); // 2^16 + 1 = 65537, large enough?
-        }
-        privateKey = publicKey.modInverse(rsaNPrime);
+        BigInteger rsaNPrimeTwo = rsaNPrime.multiply(BigInteger.TWO);
+        do {
+            // Generate a public key with gcd=1 with determinant and 2p'q'
+            publicKey = new BigInteger(KEY_BIT_LENGTH, 16, random);
+        } while (!determinant.gcd(publicKey).equals(one) || !rsaNPrimeTwo.gcd(publicKey).equals(BigInteger.ONE));
+        privateKey = publicKey.modInverse(rsaNPrimeTwo);
     }
 
 }
