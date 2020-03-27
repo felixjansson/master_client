@@ -1,7 +1,7 @@
 package com.master_thesis.client;
 
-import cc.redberry.rings.bigint.BigInteger;
 
+import java.math.BigInteger;
 import java.net.URI;
 import java.util.Map;
 

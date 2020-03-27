@@ -1,7 +1,6 @@
 package com.master_thesis.client;
 
 
-import cc.redberry.rings.bigint.BigInteger;
 import ch.qos.logback.classic.Logger;
 import org.ejml.simple.SimpleMatrix;
 import org.slf4j.LoggerFactory;
@@ -9,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 
 public class ServerShare {
     private static final Logger log = (Logger) LoggerFactory.getLogger(ServerShare.class);

@@ -1,12 +1,12 @@
 package com.master_thesis.client;
 
-import cc.redberry.rings.bigint.BigInteger;
 import org.ejml.data.DMatrixRMaj;
 import org.ejml.dense.row.SingularOps_DDRM;
 import org.ejml.simple.SimpleMatrix;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigInteger;
 import java.net.URI;
 import java.security.SecureRandom;
 import java.util.Arrays;

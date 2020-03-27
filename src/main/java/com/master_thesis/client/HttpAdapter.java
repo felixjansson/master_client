@@ -1,8 +1,8 @@
 package com.master_thesis.client;
 
 
-import cc.redberry.rings.bigint.BigInteger;
 import ch.qos.logback.classic.Logger;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
@@ -10,11 +10,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -28,9 +30,19 @@ public class HttpAdapter {
         this.objectMapper = new ObjectMapper();
     }
 
-
+    @SneakyThrows
     public void sendServerShare(URI uri, ServerShare information) {
         postRequest(uri, information);
+    }
+
+    @SneakyThrows
+    public List<Server> getServers() {
+
+        HttpRequest httpRequest = HttpRequest.newBuilder(URI.create("http://localhost:4000/api/server/list"))
+                .GET().build();
+        HttpResponse<String> response = HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        return new ObjectMapper().readValue(response.body(), new TypeReference<>() {
+        });
     }
 
     @SneakyThrows
@@ -81,6 +93,7 @@ public class HttpAdapter {
         return Integer.parseInt(response.body());
     }
 
+    @SneakyThrows
     public void sendNonce(ShareInformation shareInfo) {
         URI uri = URI.create("http://localhost:4000/lastClient/newNonce");
         postRequest(uri, shareInfo.removeServerShare());

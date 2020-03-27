@@ -1,14 +1,13 @@
 package com.master_thesis.client;
 
-import cc.redberry.rings.Ring;
-import cc.redberry.rings.Rings;
-import cc.redberry.rings.bigint.BigInteger;
 import ch.qos.logback.classic.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigInteger;
 import java.net.URI;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,20 +21,22 @@ public class HomomorphicHash {
 
     protected PublicParameters publicParameters;
     private static final Logger log = (Logger) LoggerFactory.getLogger(HomomorphicHash.class);
+    private final SecureRandom random;
 
     @Autowired
     public HomomorphicHash(PublicParameters publicParameters) {
         this.publicParameters = publicParameters;
+        random = new SecureRandom();
     }
 
     public ShareInformation shareSecret(int int_secret) {
         int substationID = publicParameters.getSubstationID();
         BigInteger base = publicParameters.getFieldBase(substationID);
         BigInteger generator = publicParameters.getGenerator(substationID);
-        Ring<BigInteger> field = Rings.Zp(base);
+        BigInteger field = new BigInteger(base.toString());
         BigInteger secret = BigInteger.valueOf(int_secret);
 
-        BigInteger nonce = field.randomElement();
+        BigInteger nonce = BigInteger.valueOf(random.nextLong());
         log.info("base: {}, generator: {}, secret: {}, nonce: {}", base, generator, secret, nonce);
         BigInteger proofComponent = hash(base, secret.add(nonce), generator);
 
@@ -51,15 +52,15 @@ public class HomomorphicHash {
         return new ShareInformation(map, nonce);
     }
 
-    protected Function<Integer, BigInteger> generatePolynomial(int secret, Ring<BigInteger> field) {
+    protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {
         int t = publicParameters.getSecurityThreshold();
         StringBuilder logString = new StringBuilder("Polynomial used: ").append(secret);
         ArrayList<BigInteger> coefficients = new ArrayList<>();
         for (int i = 1; i <= t; i++) {
-            BigInteger a = field.getZero();
-            while (a.equals(field.getZero())) {
-                a = field.randomElement();
-            }
+            BigInteger a;
+            do {
+                a = new BigInteger(field.bitLength(), random).mod(field);
+            } while (a.equals(BigInteger.ZERO) || a.compareTo(field) >= 0);
             logString.append(" + ").append(a).append("x^").append(i);
             coefficients.add(a);
         }
