@@ -28,7 +28,6 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'org.postgresql:postgresql'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.2'
-    compile "cc.redberry:rings:2.5.2"
     compile group: 'org.ejml', name: 'ejml-all', version: '0.38'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     annotationProcessor 'org.projectlombok:lombok'
