@@ -71,7 +71,7 @@ public class SmartMeter {
         JsonNode jsonNode = httpAdapter.registerClient();
         this.clientID = jsonNode.get("clientID").asInt();
         this.substationID = jsonNode.get("substationID").asInt();
-        this.fid = jsonNode.get("fid").asInt();
+        this.fid = jsonNode.get("startFid").asInt();
     }
 
     private void readAndSendShare() {
@@ -100,10 +100,6 @@ public class SmartMeter {
 
     private void newFid() {
         fid++;
-        int coordinatorFid = httpAdapter.updateFid(substationID, clientID, fid);
-        if (fid != coordinatorFid) {
-            log.info("Fid was not updated as expected. Client expected fid to be {} but server is at {}. Updating fid in client!", fid, coordinatorFid);
-            fid = coordinatorFid;
-        }
+        httpAdapter.updateFid(substationID, clientID, fid);
     }
 }

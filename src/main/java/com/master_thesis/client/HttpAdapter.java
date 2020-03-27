@@ -87,10 +87,10 @@ public class HttpAdapter {
     }
 
     @SneakyThrows
-    private String postRequest(URI uri, Object body) {
+    private void postRequest(URI uri, Object body) {
         boolean sending = true;
         String jsonObject = objectMapper.writeValueAsString(body);
-        String responseBody = null;
+
         while (sending) {
             try {
                 HttpRequest request = HttpRequest.newBuilder(uri)
@@ -102,23 +102,20 @@ public class HttpAdapter {
                 sending = false;
                 log.debug("To {}: {}", uri, jsonObject);
                 log.debug("Got answer: {}", response.body());
-                responseBody = response.body();
             } catch (InterruptedException | IOException e) {
                 log.error("Failed to send to {}: {}", uri, e.getMessage());
                 e.printStackTrace();
                 Thread.sleep(2000);
             }
         }
-        return responseBody;
     }
 
-    public int updateFid(int substationID, int clientID, int fid) {
+    public void updateFid(int substationID, int clientID, int fid) {
         URI uri = URI.create("http://localhost:4000/api/client/fid");
         Map<String, Integer> body = new HashMap<>();
         body.put("substationID", substationID);
         body.put("clientID", clientID);
         body.put("fid", fid);
-        String response = postRequest(uri, body);
-        return Integer.parseInt(response);
+        postRequest(uri, body);
     }
 }
