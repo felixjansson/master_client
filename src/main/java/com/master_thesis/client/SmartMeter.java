@@ -18,14 +18,14 @@ public class SmartMeter {
     private Reader reader;
     private int fid;
     private int clientID;
-    private RSAThreshold clientSecretSharing;
+    private HomomorphicHash clientSecretSharing;
     private HttpAdapter httpAdapter;
     private Scanner scanner;
     private int substationID;
 
 
     @Autowired
-    public SmartMeter(Reader reader, RSAThreshold clientSecretSharing, HttpAdapter httpAdapter) {
+    public SmartMeter(Reader reader, HomomorphicHash clientSecretSharing, HttpAdapter httpAdapter) {
         this.reader = reader;
         this.clientSecretSharing = clientSecretSharing;
         this.httpAdapter = httpAdapter;
@@ -83,6 +83,7 @@ public class SmartMeter {
         Map<URI, ServerShare> shareMap = shareInfo.getServerShares();
         shareMap.forEach(httpAdapter::sendServerShare);
 
+        httpAdapter.sendProofComponent(shareInfo);
         httpAdapter.sendNonce(shareInfo);
 
         newFid();

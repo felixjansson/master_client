@@ -9,12 +9,14 @@ public class ShareInformation {
 
     private final Map<URI, ServerShare> serverShares;
     private final BigInteger nonce;
+    private BigInteger proofComponent;
     private int fid;
     private int substationID;
     private int clientID;
 
-    public ShareInformation(Map<URI, ServerShare> serverShares, BigInteger nonce) {
+    public ShareInformation(Map<URI, ServerShare> serverShares, BigInteger nonce, BigInteger proofComponent) {
         this.serverShares = serverShares;
+        this.proofComponent = proofComponent;
         this.nonce = nonce;
     }
 
@@ -66,6 +68,10 @@ public class ShareInformation {
         serverShares.values().forEach(secretShare -> secretShare.setClientID(clientID));
         this.clientID = clientID;
         return this;
+    }
+
+    public BigInteger getClientProofComponent(){
+        return proofComponent;
     }
 
 }

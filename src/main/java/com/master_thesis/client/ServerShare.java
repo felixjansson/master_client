@@ -28,6 +28,14 @@ public class ServerShare {
         this.proofComponent = proofComponent;
     }
 
+    public ServerShare(BigInteger share, BigInteger proofComponent, SimpleMatrix matrixOfClient, SimpleMatrix skShare, BigInteger rsaN, int publicKey) {
+        this(share, proofComponent);
+        this.matrixOfClient = matrixOfClient;
+        this.skShare = skShare;
+        this.rsaN = rsaN;
+        this.publicKey = publicKey;
+    }
+
     public int getPublicKey() {
         return publicKey;
     }

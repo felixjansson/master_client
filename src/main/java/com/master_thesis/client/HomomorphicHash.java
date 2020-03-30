@@ -49,7 +49,7 @@ public class HomomorphicHash {
             share = share.multiply(BigInteger.valueOf(beta(server.getServerID(), serverIDs)));
             map.put(server.getUri(), new ServerShare(share, proofComponent));
         });
-        return new ShareInformation(map, nonce);
+        return new ShareInformation(map, nonce, proofComponent);
     }
 
     protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {

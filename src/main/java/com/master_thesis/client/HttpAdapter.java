@@ -100,6 +100,13 @@ public class HttpAdapter {
     }
 
     @SneakyThrows
+    public void sendProofComponent(ShareInformation shareInfo) {
+        URI uri = URI.create("http://localhost:3000/client/proofComponent");
+        VerifierInformation verifierInformation = new VerifierInformation(shareInfo);
+        postRequest(uri, verifierInformation);
+    }
+
+    @SneakyThrows
     private void postRequest(URI uri, Object body) {
         boolean sending = true;
         String jsonObject = objectMapper.writeValueAsString(body);
