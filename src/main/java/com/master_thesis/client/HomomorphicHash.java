@@ -1,6 +1,10 @@
 package com.master_thesis.client;
 
 import ch.qos.logback.classic.Logger;
+import com.master_thesis.client.data.Construction;
+import com.master_thesis.client.data.HomomorphicHashData;
+import com.master_thesis.client.data.Server;
+import com.master_thesis.client.util.PublicParameters;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -8,10 +12,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigInteger;
 import java.net.URI;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -29,27 +30,26 @@ public class HomomorphicHash {
         random = new SecureRandom();
     }
 
-    public ShareInformation shareSecret(int int_secret) {
+    public HomomorphicHashData shareSecret(int int_secret) {
         int substationID = publicParameters.getSubstationID();
-        BigInteger base = publicParameters.getFieldBase(substationID);
+        BigInteger fieldBase = publicParameters.getFieldBase(substationID);
         BigInteger generator = publicParameters.getGenerator(substationID);
-        BigInteger field = new BigInteger(base.toString());
         BigInteger secret = BigInteger.valueOf(int_secret);
 
         BigInteger nonce = BigInteger.valueOf(random.nextLong());
-        log.info("base: {}, generator: {}, secret: {}, nonce: {}", base, generator, secret, nonce);
-        BigInteger proofComponent = hash(base, secret.add(nonce), generator);
+        log.info("base: {}, generator: {}, secret: {}, nonce: {}", fieldBase, generator, secret, nonce);
+        BigInteger proofComponent = hash(fieldBase, secret.add(nonce), generator);
 
-        Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, field);
+        Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, fieldBase);
         List<Server> servers = publicParameters.getServers();
         Set<Integer> serverIDs = servers.stream().map(Server::getServerID).collect(Collectors.toSet());
-        HashMap<URI, ServerShare> map = new HashMap<>();
+        Map<URI, BigInteger> shares = new HashMap<>();
         servers.forEach(server -> {
             BigInteger share = polynomial.apply(server.getServerID());
             share = share.multiply(BigInteger.valueOf(beta(server.getServerID(), serverIDs)));
-            map.put(server.getUri(), new ServerShare(share, proofComponent));
+            shares.put(server.getUri().resolve(Construction.HASH.getEndpoint()), share);
         });
-        return new ShareInformation(map, nonce, proofComponent);
+        return new HomomorphicHashData(shares, proofComponent, nonce);
     }
 
     protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {
@@ -68,7 +68,7 @@ public class HomomorphicHash {
 
         return (serverID) -> {
             BigInteger serverIDBIG = BigInteger.valueOf(serverID);
-            BigInteger res = field.valueOf(secret);
+            BigInteger res = BigInteger.valueOf(secret);
             for (int i = 0; i < coefficients.size(); i++) {
                 BigInteger coefficient = coefficients.get(i);
                 BigInteger polynomial = serverIDBIG.pow(i + 1);

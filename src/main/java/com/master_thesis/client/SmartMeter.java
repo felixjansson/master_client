@@ -2,14 +2,22 @@ package com.master_thesis.client;
 
 import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.master_thesis.client.data.Construction;
+import com.master_thesis.client.data.HomomorphicHashData;
+import com.master_thesis.client.data.RSAThresholdData;
+import com.master_thesis.client.util.HttpAdapter;
+import com.master_thesis.client.util.Reader;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SpringBootApplication
 public class SmartMeter {
@@ -18,19 +26,23 @@ public class SmartMeter {
     private Reader reader;
     private int fid;
     private int clientID;
-    private HomomorphicHash clientSecretSharing;
+    private RSAThreshold RSAThresholdConstruction;
+    private HomomorphicHash homomorphicHashConstruction;
     private HttpAdapter httpAdapter;
     private Scanner scanner;
     private int substationID;
+    private Collection<Construction> enabledConstructions;
 
 
     @Autowired
-    public SmartMeter(Reader reader, HomomorphicHash clientSecretSharing, HttpAdapter httpAdapter) {
+    public SmartMeter(Reader reader, RSAThreshold RSAThresholdConstruction, HomomorphicHash homomorphicHashConstruction, HttpAdapter httpAdapter) {
         this.reader = reader;
-        this.clientSecretSharing = clientSecretSharing;
+        this.RSAThresholdConstruction = RSAThresholdConstruction;
+        this.homomorphicHashConstruction = homomorphicHashConstruction;
         this.httpAdapter = httpAdapter;
         register();
         scanner = new Scanner(System.in);
+        enabledConstructions = Stream.of(Construction.HASH, Construction.RSA).collect(Collectors.toSet());
     }
 
     public static void main(String[] args) {
@@ -42,7 +54,7 @@ public class SmartMeter {
         boolean running = true;
         while (running) {
 
-            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. [d]elete all. [any] to send shares. ", clientID);
+            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. [d]elete all. [t]oggle construction. [any] to send shares. ", clientID);
             while (!scanner.hasNext())
                 Thread.sleep(1000);
 
@@ -60,10 +72,30 @@ public class SmartMeter {
                 case "l":
                     System.out.println(listClients());
                     break;
+                case "t":
+                    toggleConstruction();
+                    break;
                 default:
                     readAndSendShare();
                     break;
             }
+        }
+    }
+
+    private void toggleConstruction() {
+        Map<String, Construction> constructionMap = Map.of("1", Construction.HASH, "2", Construction.RSA);
+        String input;
+        do {
+            System.out.printf("Client %s: Active: %s \n", clientID, enabledConstructions);
+            System.out.printf("Client %s: Press to toggle [1 Hash] [2 RSA] or [b]ack ", clientID);
+            input = scanner.next();
+            if ("b".equals(input)) return;
+        } while (!constructionMap.containsKey(input));
+        Construction construction = constructionMap.get(input);
+        if (enabledConstructions.contains(construction)) {
+            enabledConstructions.remove(construction);
+        } else {
+            enabledConstructions.add(construction);
         }
     }
 
@@ -76,17 +108,39 @@ public class SmartMeter {
 
     private void readAndSendShare() {
         int val = reader.readValue();
-        log.info("=== Starting new share fid:{} ===", fid);
-        ShareInformation shareInfo = clientSecretSharing.shareSecret(val);
-        shareInfo.setFid(fid).setClientID(clientID).setSubstationID(substationID);
+        log.info("=== Starting new share ===");
 
-        Map<URI, ServerShare> shareMap = shareInfo.getServerShares();
-        shareMap.forEach(httpAdapter::sendServerShare);
+        if (enabledConstructions.contains(Construction.HASH)) {
+            log.info("# FID: {} # Sending with {}", fid, Construction.HASH);
+            HomomorphicHashData data = homomorphicHashConstruction.shareSecret(val);
+            data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
 
-        httpAdapter.sendProofComponent(shareInfo);
-        httpAdapter.sendNonce(shareInfo);
+            Map<URI, HomomorphicHashData.ServerData> serverDataMap = data.getServerData();
+            serverDataMap.forEach(httpAdapter::sendServerShare);
 
-        newFid();
+            httpAdapter.sendNonce(data.getNonceData());
+            httpAdapter.sendProofComponent(data.getVerifierData());
+
+            newFid();
+        }
+
+        if (enabledConstructions.contains(Construction.RSA)) {
+            log.info("# FID: {} # Sending with {}", fid, Construction.RSA);
+
+            RSAThresholdData data = RSAThresholdConstruction.shareSecret(val);
+            data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
+
+            Map<URI, RSAThresholdData.ServerData> shareMap = data.getServerData();
+            shareMap.forEach(httpAdapter::sendServerShare);
+
+            httpAdapter.sendNonce(data.getNonceData());
+            httpAdapter.sendProofComponent(data.getVerifierData());
+
+            newFid();
+        }
+
+        log.info("=== Shares sent. Next fid {} ===", fid);
+
     }
 
     private String listClients() {

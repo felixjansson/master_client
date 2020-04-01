@@ -1,4 +1,4 @@
-package com.master_thesis.client;
+package com.master_thesis.client.util;
 
 import org.springframework.stereotype.Component;
 

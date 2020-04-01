@@ -1,4 +1,4 @@
-package com.master_thesis.client;
+package com.master_thesis.client.data;
 
 import java.net.URI;
 
@@ -20,6 +20,6 @@ public class Server {
     }
 
     public void setUri(URI uri) {
-        this.uri = uri;
+        this.uri = uri.resolve("api/");
     }
 }

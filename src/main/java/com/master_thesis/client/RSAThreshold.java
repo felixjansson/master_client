@@ -1,6 +1,13 @@
 package com.master_thesis.client;
 
 import ch.qos.logback.classic.Logger;
+import com.master_thesis.client.data.Construction;
+import com.master_thesis.client.data.RSAThresholdData;
+import com.master_thesis.client.data.RSAThresholdData.NonceData;
+import com.master_thesis.client.data.RSAThresholdData.ServerData;
+import com.master_thesis.client.data.RSAThresholdData.VerifierData;
+import com.master_thesis.client.data.Server;
+import com.master_thesis.client.util.PublicParameters;
 import org.ejml.data.DMatrixRMaj;
 import org.ejml.dense.row.SingularOps_DDRM;
 import org.ejml.simple.SimpleMatrix;
@@ -39,23 +46,24 @@ public class RSAThreshold {
         this.publicParameters = publicParameters;
     }
 
-    public ShareInformation shareSecret(int int_secret) {
+    public RSAThresholdData shareSecret(int int_secret) {
         // Collect public information
         int substationID = publicParameters.getSubstationID();
-        BigInteger base = publicParameters.getFieldBase(substationID);
+        BigInteger fieldBase = publicParameters.getFieldBase(substationID);
         BigInteger generator = publicParameters.getGenerator(substationID);
         securityThreshold = publicParameters.getSecurityThreshold();
-        BigInteger fieldBase = new BigInteger(base.toString());
         BigInteger secret = BigInteger.valueOf(int_secret);
         List<Server> servers = publicParameters.getServers();
+        if (servers.isEmpty())
+            throw new RuntimeException("No servers available, the computation can not be performed");
         Set<Integer> serverIDs = servers.stream().map(Server::getServerID).collect(Collectors.toSet());
 
         // Compute proofComponent (tau), create a polynomial and nonce
         BigInteger nonce = BigInteger.valueOf(random.nextLong());
-        BigInteger proofComponent = hash(base, secret.add(nonce), generator);
+        BigInteger proofComponent = hash(fieldBase, secret.add(nonce), generator);
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, fieldBase);
 
-        log.info("base: {}, generator: {}, secret: {}, nonce: {}", base, generator, secret, nonce);
+        log.info("base: {}, generator: {}, secret: {}, nonce: {}", fieldBase, generator, secret, nonce);
 
         //RSA components
         generateRSAPrimes(fieldBase);
@@ -65,14 +73,14 @@ public class RSAThreshold {
         SimpleMatrix skShares = matrixOfClient.mult(skv);
 
         // Pack the information which should be sent.
-        HashMap<URI, ServerShare> map = new HashMap<>();
+        HashMap<URI, ServerData> serverData = new HashMap<>();
         servers.forEach(server -> {
             // Compute the server's share
             BigInteger share = polynomial.apply(server.getServerID());
             share = share.multiply(BigInteger.valueOf(beta(server.getServerID(), serverIDs)));
-            map.put(server.getUri(), new ServerShare(share, proofComponent, matrixOfClient, skShares, rsaN, publicKey.intValue()));
+            serverData.put(server.getUri().resolve(Construction.RSA.getEndpoint()), new ServerData(share, proofComponent, matrixOfClient, skShares, rsaN));
         });
-        return new ShareInformation(map, nonce, proofComponent);
+        return new RSAThresholdData(serverData, new VerifierData(proofComponent, publicKey), new NonceData(nonce));
     }
 
     protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {

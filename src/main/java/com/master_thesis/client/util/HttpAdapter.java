@@ -1,10 +1,12 @@
-package com.master_thesis.client;
+package com.master_thesis.client.util;
 
 
 import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.master_thesis.client.data.ComputationData;
+import com.master_thesis.client.data.Server;
 import lombok.SneakyThrows;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -31,7 +33,7 @@ public class HttpAdapter {
     }
 
     @SneakyThrows
-    public void sendServerShare(URI uri, ServerShare information) {
+    public void sendServerShare(URI uri, Object information) {
         postRequest(uri, information);
     }
 
@@ -79,7 +81,7 @@ public class HttpAdapter {
 
     @SneakyThrows
     public JsonNode listClients(int substationID) {
-        URI uri = URI.create("http://localhost:4000/api/client/list");
+        URI uri = URI.create("http://localhost:4000/api/client/list/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         return objectMapper.readValue(response.body(), JsonNode.class);
@@ -94,16 +96,15 @@ public class HttpAdapter {
     }
 
     @SneakyThrows
-    public void sendNonce(ShareInformation shareInfo) {
+    public void sendNonce(Object nonceData) {
         URI uri = URI.create("http://localhost:4000/lastClient/newNonce");
-        postRequest(uri, shareInfo.removeServerShare());
+        postRequest(uri, nonceData);
     }
 
     @SneakyThrows
-    public void sendProofComponent(ShareInformation shareInfo) {
-        URI uri = URI.create("http://localhost:3000/client/proofComponent");
-        VerifierInformation verifierInformation = new VerifierInformation(shareInfo);
-        postRequest(uri, verifierInformation);
+    public void sendProofComponent(ComputationData clientProofData) {
+        URI uri = URI.create("http://localhost:3000/api/client/" + clientProofData.getConstruction().getEndpoint());
+        postRequest(uri, clientProofData);
     }
 
     @SneakyThrows
@@ -121,7 +122,9 @@ public class HttpAdapter {
                 HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
                 sending = false;
                 log.debug("To {}: {}", uri, jsonObject);
-                log.debug("Got answer: {}", response.body());
+                if (!response.body().isEmpty()) {
+                    log.debug("Got answer: {}", response.body());
+                }
             } catch (InterruptedException | IOException e) {
                 log.error("Failed to send to {}: {}", uri, e.getMessage());
                 e.printStackTrace();

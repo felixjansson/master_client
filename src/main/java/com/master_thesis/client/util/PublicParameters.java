@@ -1,6 +1,7 @@
-package com.master_thesis.client;
+package com.master_thesis.client.util;
 
 
+import com.master_thesis.client.data.Server;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
