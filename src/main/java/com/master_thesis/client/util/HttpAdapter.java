@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.master_thesis.client.data.ComputationData;
+import com.master_thesis.client.data.Construction;
+import com.master_thesis.client.data.LinearSignatureData;
 import com.master_thesis.client.data.Server;
 import lombok.SneakyThrows;
 import org.slf4j.LoggerFactory;
@@ -111,7 +113,7 @@ public class HttpAdapter {
     private void postRequest(URI uri, Object body) {
         boolean sending = true;
         String jsonObject = objectMapper.writeValueAsString(body);
-
+        int tries = 10;
         while (sending) {
             try {
                 HttpRequest request = HttpRequest.newBuilder(uri)
@@ -127,7 +129,7 @@ public class HttpAdapter {
                 }
             } catch (InterruptedException | IOException e) {
                 log.error("Failed to send to {}: {}", uri, e.getMessage());
-                e.printStackTrace();
+                sending = --tries > 0;
                 Thread.sleep(2000);
             }
         }
@@ -140,5 +142,13 @@ public class HttpAdapter {
         body.put("clientID", clientID);
         body.put("fid", fid);
         postRequest(uri, body);
+    }
+
+    @SneakyThrows
+    public LinearSignatureData.PublicData getLinearPublicData(int substationID, int fid) {
+        URI uri = URI.create("http://localhost:4000/api/" + Construction.LINEAR.getEndpoint() + "/client/" + substationID + "/" + fid);
+        HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        return objectMapper.readValue(response.body(), LinearSignatureData.PublicData.class);
     }
 }

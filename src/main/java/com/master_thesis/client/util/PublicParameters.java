@@ -1,6 +1,7 @@
 package com.master_thesis.client.util;
 
 
+import com.master_thesis.client.data.LinearSignatureData;
 import com.master_thesis.client.data.Server;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -43,4 +44,8 @@ public class PublicParameters {
         return httpAdapter.getTSecurity(getSubstationID());
     }
 
+    public LinearSignatureData.PublicData getLinearPublicData(int substationID, int fid) {
+        return httpAdapter.getLinearPublicData(substationID, fid);
+
+    }
 }

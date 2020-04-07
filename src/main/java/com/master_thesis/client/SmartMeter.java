@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.master_thesis.client.data.Construction;
 import com.master_thesis.client.data.HomomorphicHashData;
+import com.master_thesis.client.data.LinearSignatureData;
 import com.master_thesis.client.data.RSAThresholdData;
 import com.master_thesis.client.util.HttpAdapter;
 import com.master_thesis.client.util.Reader;
@@ -28,21 +29,22 @@ public class SmartMeter {
     private int clientID;
     private RSAThreshold RSAThresholdConstruction;
     private HomomorphicHash homomorphicHashConstruction;
+    private LinearSignature linearSignatureConstruction;
     private HttpAdapter httpAdapter;
     private Scanner scanner;
     private int substationID;
-    private Collection<Construction> enabledConstructions;
+    private Collection<Construction> enabledConstructions = Stream.of(Construction.LINEAR).collect(Collectors.toSet());
 
 
     @Autowired
-    public SmartMeter(Reader reader, RSAThreshold RSAThresholdConstruction, HomomorphicHash homomorphicHashConstruction, HttpAdapter httpAdapter) {
+    public SmartMeter(Reader reader, RSAThreshold RSAThresholdConstruction, HomomorphicHash homomorphicHashConstruction, LinearSignature linearSignatureConstruction, HttpAdapter httpAdapter) {
         this.reader = reader;
         this.RSAThresholdConstruction = RSAThresholdConstruction;
         this.homomorphicHashConstruction = homomorphicHashConstruction;
+        this.linearSignatureConstruction = linearSignatureConstruction;
         this.httpAdapter = httpAdapter;
         register();
         scanner = new Scanner(System.in);
-        enabledConstructions = Stream.of(Construction.HASH, Construction.RSA).collect(Collectors.toSet());
     }
 
     public static void main(String[] args) {
@@ -83,11 +85,11 @@ public class SmartMeter {
     }
 
     private void toggleConstruction() {
-        Map<String, Construction> constructionMap = Map.of("1", Construction.HASH, "2", Construction.RSA);
+        Map<String, Construction> constructionMap = Map.of("1", Construction.HASH, "2", Construction.RSA, "3", Construction.LINEAR);
         String input;
         do {
             System.out.printf("Client %s: Active: %s \n", clientID, enabledConstructions);
-            System.out.printf("Client %s: Press to toggle [1 Hash] [2 RSA] or [b]ack ", clientID);
+            System.out.printf("Client %s: Press to toggle [1 Hash] [2 RSA] [3 Linear] or [b]ack ", clientID);
             input = scanner.next();
             if ("b".equals(input)) return;
         } while (!constructionMap.containsKey(input));
@@ -107,12 +109,12 @@ public class SmartMeter {
     }
 
     private void readAndSendShare() {
-        int val = reader.readValue();
+        int secret = reader.readValue();
         log.info("=== Starting new share ===");
 
         if (enabledConstructions.contains(Construction.HASH)) {
             log.info("# FID: {} # Sending with {}", fid, Construction.HASH);
-            HomomorphicHashData data = homomorphicHashConstruction.shareSecret(val);
+            HomomorphicHashData data = homomorphicHashConstruction.shareSecret(secret);
             data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
 
             Map<URI, HomomorphicHashData.ServerData> serverDataMap = data.getServerData();
@@ -127,11 +129,26 @@ public class SmartMeter {
         if (enabledConstructions.contains(Construction.RSA)) {
             log.info("# FID: {} # Sending with {}", fid, Construction.RSA);
 
-            RSAThresholdData data = RSAThresholdConstruction.shareSecret(val);
+            RSAThresholdData data = RSAThresholdConstruction.shareSecret(secret);
             data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
 
             Map<URI, RSAThresholdData.ServerData> shareMap = data.getServerData();
             shareMap.forEach(httpAdapter::sendServerShare);
+
+            httpAdapter.sendNonce(data.getNonceData());
+            httpAdapter.sendProofComponent(data.getVerifierData());
+
+            newFid();
+        }
+
+        if (enabledConstructions.contains(Construction.LINEAR)) {
+            log.info("# FID: {} # Sending with {}", fid, Construction.LINEAR);
+            LinearSignatureData data = linearSignatureConstruction.shareSecret(secret);
+            data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
+            data = linearSignatureConstruction.partialProof(data, secret);
+
+            Map<URI, LinearSignatureData.ServerData> serverDataMap = data.getServerData();
+            serverDataMap.forEach(httpAdapter::sendServerShare);
 
             httpAdapter.sendNonce(data.getNonceData());
             httpAdapter.sendProofComponent(data.getVerifierData());
