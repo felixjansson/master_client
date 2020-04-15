@@ -36,7 +36,7 @@ public class LinearSignature {
 
         // Generate client specific things
         BigInteger secret = BigInteger.valueOf(int_secret);
-        BigInteger nonce = BigInteger.valueOf(random.nextLong());
+        BigInteger nonce = BigInteger.valueOf(random.nextLong()).mod(fieldBase);
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, fieldBase);
 
         log.info("base: {}, secret: {}, nonce: {}", fieldBase, secret, nonce);

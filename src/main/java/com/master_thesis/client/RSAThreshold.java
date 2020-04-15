@@ -59,7 +59,7 @@ public class RSAThreshold {
         Set<Integer> serverIDs = servers.stream().map(Server::getServerID).collect(Collectors.toSet());
 
         // Compute proofComponent (tau), create a polynomial and nonce
-        BigInteger nonce = BigInteger.valueOf(random.nextLong());
+        BigInteger nonce = BigInteger.valueOf(random.nextLong()).mod(fieldBase);
         BigInteger proofComponent = hash(fieldBase, secret.add(nonce), generator);
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, fieldBase);
 

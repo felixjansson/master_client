@@ -36,7 +36,7 @@ public class HomomorphicHash {
         BigInteger generator = publicParameters.getGenerator(substationID);
         BigInteger secret = BigInteger.valueOf(int_secret);
 
-        BigInteger nonce = BigInteger.valueOf(random.nextLong());
+        BigInteger nonce = BigInteger.valueOf(random.nextLong()).mod(fieldBase);
         log.info("base: {}, generator: {}, secret: {}, nonce: {}", fieldBase, generator, secret, nonce);
         BigInteger proofComponent = hash(fieldBase, secret.add(nonce), generator);
 
