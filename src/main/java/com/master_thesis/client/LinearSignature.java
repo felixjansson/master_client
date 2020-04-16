@@ -97,9 +97,9 @@ public class LinearSignature {
 //      Compute the xi,R with nonce and secret
         BigInteger xR = data.getNonceData().getNonce().add(BigInteger.valueOf(secret));
 //      x^(eN) = {g^s * PRODUCT( h[j]^f[j,i] ) * g1^(xR)} mod nRoof
-        BigInteger xeN = publicData.getG().modPow(s, publicData.getNRoof())
+        BigInteger xeN = publicData.getG1().modPow(s, publicData.getNRoof())
                 .multiply(publicData.getH()[data.getClientID()])
-                .multiply(publicData.getG1().modPow(xR, publicData.getNRoof()))
+                .multiply(publicData.getG2().modPow(xR, publicData.getNRoof()))
                 .mod(publicData.getNRoof());
 //      Solve for x using z as the inverse of eN in mod(totient{NRoof})
 //      (eN)z = 1 mod totient(NRoof) ==> (x^(eN))^z = x mod NRoof.

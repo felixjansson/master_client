@@ -140,7 +140,7 @@ public class LinearSignatureData {
     }
 
     public static class PublicData {
-        private BigInteger N, NRoof, fidPrime, g, g1;
+        private BigInteger N, NRoof, fidPrime, g1, g2;
         private BigInteger[] h, sk;
 
         public BigInteger getN() {
@@ -167,20 +167,20 @@ public class LinearSignatureData {
             this.fidPrime = fidPrime;
         }
 
-        public BigInteger getG() {
-            return g;
-        }
-
-        public void setG(BigInteger g) {
-            this.g = g;
-        }
-
         public BigInteger getG1() {
             return g1;
         }
 
         public void setG1(BigInteger g1) {
             this.g1 = g1;
+        }
+
+        public BigInteger getG2() {
+            return g2;
+        }
+
+        public void setG2(BigInteger g2) {
+            this.g2 = g2;
         }
 
         public BigInteger[] getH() {
