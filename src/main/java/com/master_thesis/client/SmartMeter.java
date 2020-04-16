@@ -2,10 +2,7 @@ package com.master_thesis.client;
 
 import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.master_thesis.client.data.Construction;
-import com.master_thesis.client.data.HomomorphicHashData;
-import com.master_thesis.client.data.LinearSignatureData;
-import com.master_thesis.client.data.RSAThresholdData;
+import com.master_thesis.client.data.*;
 import com.master_thesis.client.util.HttpAdapter;
 import com.master_thesis.client.util.Reader;
 import org.slf4j.LoggerFactory;
@@ -30,18 +27,20 @@ public class SmartMeter {
     private RSAThreshold RSAThresholdConstruction;
     private HomomorphicHash homomorphicHashConstruction;
     private LinearSignature linearSignatureConstruction;
+    private NonceDistribution nonceDistribution;
     private HttpAdapter httpAdapter;
     private Scanner scanner;
     private int substationID;
-    private Collection<Construction> enabledConstructions = Stream.of(Construction.HASH, Construction.RSA, Construction.LINEAR).collect(Collectors.toSet());
+    private Collection<Construction> enabledConstructions = Stream.of(Construction.NONCE, Construction.LINEAR, Construction.HASH, Construction.RSA).collect(Collectors.toSet());
 
 
     @Autowired
-    public SmartMeter(Reader reader, RSAThreshold RSAThresholdConstruction, HomomorphicHash homomorphicHashConstruction, LinearSignature linearSignatureConstruction, HttpAdapter httpAdapter) {
+    public SmartMeter(Reader reader, RSAThreshold RSAThresholdConstruction, HomomorphicHash homomorphicHashConstruction, LinearSignature linearSignatureConstruction, NonceDistribution nonceDistribution, HttpAdapter httpAdapter) {
         this.reader = reader;
         this.RSAThresholdConstruction = RSAThresholdConstruction;
         this.homomorphicHashConstruction = homomorphicHashConstruction;
         this.linearSignatureConstruction = linearSignatureConstruction;
+        this.nonceDistribution = nonceDistribution;
         this.httpAdapter = httpAdapter;
         register();
         scanner = new Scanner(System.in);
@@ -85,11 +84,15 @@ public class SmartMeter {
     }
 
     private void toggleConstruction() {
-        Map<String, Construction> constructionMap = Map.of("1", Construction.HASH, "2", Construction.RSA, "3", Construction.LINEAR);
+        Map<String, Construction> constructionMap = Map.of(
+                "1", Construction.HASH,
+                "2", Construction.RSA,
+                "3", Construction.LINEAR,
+                "4", Construction.NONCE);
         String input;
         do {
             System.out.printf("Client %s: Active: %s \n", clientID, enabledConstructions);
-            System.out.printf("Client %s: Press to toggle [1 Hash] [2 RSA] [3 Linear] or [b]ack ", clientID);
+            System.out.printf("Client %s: Press to toggle [1 Hash] [2 RSA] [3 Linear] [4 Nonce] or [b]ack ", clientID);
             input = scanner.next();
             if ("b".equals(input)) return;
         } while (!constructionMap.containsKey(input));
@@ -154,6 +157,20 @@ public class SmartMeter {
             httpAdapter.sendProofComponent(data.getVerifierData());
 
             newFid();
+        }
+
+        if (enabledConstructions.contains(Construction.NONCE)) {
+            log.info("# FID: {} # Sending with {}", fid, Construction.NONCE);
+            NonceDistributionData data = nonceDistribution.shareSecret(secret);
+            data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
+
+            Map<URI, NonceDistributionData.ServerData> serverDataMap = data.getServerData();
+            serverDataMap.forEach(httpAdapter::sendServerShare);
+
+            httpAdapter.sendProofComponent(data.getVerifierData());
+
+            newFid();
+
         }
 
         log.info("=== Shares sent. Next fid {} ===", fid);

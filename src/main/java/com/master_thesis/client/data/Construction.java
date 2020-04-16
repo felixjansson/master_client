@@ -1,7 +1,10 @@
 package com.master_thesis.client.data;
 
 public enum Construction {
-    RSA("RSA Threshold Scheme", "rsa-data"), HASH("Homomorphic Hash", "hash-data"), LINEAR("Linear Homomorphic Signatures", "linear-data");
+    RSA("RSA Threshold Scheme", "rsa-data"),
+    HASH("Homomorphic Hash", "hash-data"),
+    LINEAR("Linear Homomorphic Signatures", "linear-data"),
+    NONCE("t-secure Nonce Distribution", "nonce-data");
 
 
     private final String name;
