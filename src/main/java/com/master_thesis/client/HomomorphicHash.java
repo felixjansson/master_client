@@ -14,7 +14,6 @@ import java.net.URI;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 
 @Component("hash")
@@ -42,14 +41,25 @@ public class HomomorphicHash {
 
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, fieldBase);
         List<Server> servers = publicParameters.getServers();
-        Set<Integer> serverIDs = servers.stream().map(Server::getServerID).collect(Collectors.toSet());
+        Set<Integer> polynomialInput = generatePolynomialInput(servers.size());
+        Iterator<Integer> iteratorPolyInput = polynomialInput.iterator();
         Map<URI, BigInteger> shares = new HashMap<>();
         servers.forEach(server -> {
-            BigInteger share = polynomial.apply(server.getServerID());
-            share = share.multiply(BigInteger.valueOf(beta(server.getServerID(), serverIDs)));
+            int number = iteratorPolyInput.next();
+            BigInteger share = polynomial.apply(number);
+            share = share.multiply(beta(number, polynomialInput));
             shares.put(server.getUri().resolve(Construction.HASH.getEndpoint()), share);
         });
         return new HomomorphicHashData(shares, proofComponent, nonce);
+    }
+
+    private Set<Integer> generatePolynomialInput(int size) {
+        Set<Integer> result = new HashSet<>();
+        int offset = random.nextInt(500) + 1;
+        for (int i = 0; i < size; i++) {
+            result.add(i + offset);
+        }
+        return result;
     }
 
     protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {
@@ -82,14 +92,16 @@ public class HomomorphicHash {
         return g.modPow(input, field);
     }
 
-    public int beta(int serverID, Set<Integer> serverIDs) {
-        return (int) Math.round(serverIDs.stream().mapToDouble(Integer::doubleValue).reduce(1f, (prev, j) -> {
-            if (j == serverID) {
-                return prev;
-            } else {
-                return prev * (j / (j - serverID));
-            }
-        }));
+    public BigInteger beta(int currentValue, Set<Integer> potentialValues){
+        BigInteger cv = BigInteger.valueOf(currentValue);
+        BigInteger nominator = potentialValues.stream().map(BigInteger::valueOf)
+                .filter(x -> !x.equals(cv))
+                .reduce(BigInteger.ONE, BigInteger::multiply);
+        BigInteger denominator = potentialValues.stream().map(BigInteger::valueOf)
+                .filter(x -> !x.equals(cv))
+                .reduce(BigInteger.ONE, (prev, x) -> prev.multiply(x.subtract(cv)));
+        log.debug("beta values: {}/{} = {}", nominator, denominator, nominator.divideAndRemainder(denominator));
+        return nominator.divide(denominator);
     }
 
 }

@@ -73,14 +73,17 @@ public class RSAThreshold {
         SimpleMatrix skShares = matrixOfClient.mult(skv);
 
         // Pack the information which should be sent.
-        HashMap<URI, ServerData> serverData = new HashMap<>();
+        Set<Integer> polynomialInput = generatePolynomialInput(servers.size());
+        Iterator<Integer> iteratorPolyInput = polynomialInput.iterator();
+        HashMap<URI, ServerData> shares = new HashMap<>();
         servers.forEach(server -> {
             // Compute the server's share
-            BigInteger share = polynomial.apply(server.getServerID());
-            share = share.multiply(BigInteger.valueOf(beta(server.getServerID(), serverIDs)));
-            serverData.put(server.getUri().resolve(Construction.RSA.getEndpoint()), new ServerData(share, proofComponent, matrixOfClient, skShares, rsaN));
+            int number = iteratorPolyInput.next();
+            BigInteger share = polynomial.apply(number);
+            share = share.multiply(beta(number, polynomialInput));
+            shares.put(server.getUri().resolve(Construction.RSA.getEndpoint()), new ServerData(share, proofComponent, matrixOfClient, skShares, rsaN));
         });
-        return new RSAThresholdData(serverData, new VerifierData(proofComponent, publicKey), new NonceData(nonce));
+        return new RSAThresholdData(shares, new VerifierData(proofComponent, publicKey), new NonceData(nonce));
     }
 
     protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {
@@ -113,14 +116,25 @@ public class RSAThreshold {
         return g.modPow(input, field);
     }
 
-    public int beta(int serverID, Set<Integer> serverIDs) {
-        return (int) Math.round(serverIDs.stream().mapToDouble(Integer::doubleValue).reduce(1f, (prev, j) -> {
-            if (j == serverID) {
-                return prev;
-            } else {
-                return prev * (j / (j - serverID));
-            }
-        }));
+    public BigInteger beta(int currentValue, Set<Integer> potentialValues){
+        BigInteger cv = BigInteger.valueOf(currentValue);
+        BigInteger nominator = potentialValues.stream().map(BigInteger::valueOf)
+                .filter(x -> !x.equals(cv))
+                .reduce(BigInteger.ONE, BigInteger::multiply);
+        BigInteger denominator = potentialValues.stream().map(BigInteger::valueOf)
+                .filter(x -> !x.equals(cv))
+                .reduce(BigInteger.ONE, (prev, x) -> prev.multiply(x.subtract(cv)));
+        log.debug("beta values: {}/{} = {}", nominator, denominator, nominator.divideAndRemainder(denominator));
+        return nominator.divide(denominator);
+    }
+
+    private Set<Integer> generatePolynomialInput(int size) {
+        Set<Integer> result = new HashSet<>();
+        int offset = random.nextInt(500) + 1;
+        for (int i = 0; i < size; i++) {
+            result.add(i + offset);
+        }
+        return result;
     }
 
     private SimpleMatrix generateSKVector(BigInteger fieldBase) {

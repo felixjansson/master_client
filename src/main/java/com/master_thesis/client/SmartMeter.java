@@ -31,7 +31,7 @@ public class SmartMeter {
     private HttpAdapter httpAdapter;
     private Scanner scanner;
     private int substationID;
-    private Collection<Construction> enabledConstructions = Stream.of(Construction.NONCE, Construction.LINEAR, Construction.HASH, Construction.RSA).collect(Collectors.toSet());
+    private Collection<Construction> enabledConstructions = Stream.of(Construction.HASH, Construction.RSA, Construction.LINEAR).collect(Collectors.toSet());
 
 
     @Autowired
