@@ -14,6 +14,8 @@ import java.net.URI;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 @Component("hash")
@@ -41,7 +43,7 @@ public class HomomorphicHash {
 
         Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, fieldBase);
         List<Server> servers = publicParameters.getServers();
-        Set<Integer> polynomialInput = generatePolynomialInput(servers.size());
+        Set<Integer> polynomialInput = IntStream.range(1,servers.size() + 1).boxed().collect(Collectors.toSet());
         Iterator<Integer> iteratorPolyInput = polynomialInput.iterator();
         Map<URI, BigInteger> shares = new HashMap<>();
         servers.forEach(server -> {
@@ -51,15 +53,6 @@ public class HomomorphicHash {
             shares.put(server.getUri().resolve(Construction.HASH.getEndpoint()), share);
         });
         return new HomomorphicHashData(shares, proofComponent, nonce);
-    }
-
-    private Set<Integer> generatePolynomialInput(int size) {
-        Set<Integer> result = new HashSet<>();
-        int offset = random.nextInt(500) + 1;
-        for (int i = 0; i < size; i++) {
-            result.add(i + offset);
-        }
-        return result;
     }
 
     protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {

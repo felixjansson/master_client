@@ -16,6 +16,8 @@ import java.net.URI;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Component
 public class LinearSignature {
@@ -42,7 +44,7 @@ public class LinearSignature {
 
         // Compute server specific things
         List<Server> servers = publicParameters.getServers();
-        Set<Integer> polynomialInput = generatePolynomialInput(servers.size());
+        Set<Integer> polynomialInput = IntStream.range(1,servers.size() + 1).boxed().collect(Collectors.toSet());
         Iterator<Integer> iteratorPolyInput = polynomialInput.iterator();
         Map<URI, ServerData> shares = new HashMap<>();
         servers.forEach(server -> {
@@ -90,15 +92,6 @@ public class LinearSignature {
                 .reduce(BigInteger.ONE, (prev, x) -> prev.multiply(x.subtract(cv)));
         log.debug("beta values: {}/{} = {}", nominator, denominator, nominator.divideAndRemainder(denominator));
         return nominator.divide(denominator);
-    }
-
-    private Set<Integer> generatePolynomialInput(int size) {
-        Set<Integer> result = new HashSet<>();
-        int offset = random.nextInt(500) + 1;
-        for (int i = 0; i < size; i++) {
-            result.add(i + offset);
-        }
-        return result;
     }
 
     public LinearSignatureData partialProof(LinearSignatureData data, int secret) {

@@ -21,6 +21,7 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Component("rsa")
 public class RSAThreshold {
@@ -73,7 +74,7 @@ public class RSAThreshold {
         SimpleMatrix skShares = matrixOfClient.mult(skv);
 
         // Pack the information which should be sent.
-        Set<Integer> polynomialInput = generatePolynomialInput(servers.size());
+        Set<Integer> polynomialInput = IntStream.range(1, servers.size() + 1).boxed().collect(Collectors.toSet());
         Iterator<Integer> iteratorPolyInput = polynomialInput.iterator();
         HashMap<URI, ServerData> shares = new HashMap<>();
         servers.forEach(server -> {
@@ -116,7 +117,7 @@ public class RSAThreshold {
         return g.modPow(input, field);
     }
 
-    public BigInteger beta(int currentValue, Set<Integer> potentialValues){
+    public BigInteger beta(int currentValue, Set<Integer> potentialValues) {
         BigInteger cv = BigInteger.valueOf(currentValue);
         BigInteger nominator = potentialValues.stream().map(BigInteger::valueOf)
                 .filter(x -> !x.equals(cv))
@@ -128,15 +129,6 @@ public class RSAThreshold {
         return nominator.divide(denominator);
     }
 
-    private Set<Integer> generatePolynomialInput(int size) {
-        Set<Integer> result = new HashSet<>();
-        int offset = random.nextInt(500) + 1;
-        for (int i = 0; i < size; i++) {
-            result.add(i + offset);
-        }
-        return result;
-    }
-
     private SimpleMatrix generateSKVector(BigInteger fieldBase) {
         SimpleMatrix skv = new SimpleMatrix(securityThreshold, 1);
         for (int i = 1; i < securityThreshold; i++) {
@@ -144,9 +136,7 @@ public class RSAThreshold {
             skv.set(i, 0, value);
         }
         skv.set(0, 0, privateKey.intValue());
-
         return skv;
-
     }
 
     // TODO: 2020-03-09 What should we do when 'm' or 't' is zero? 
@@ -182,7 +172,6 @@ public class RSAThreshold {
     private BigInteger[] generateConstrainedSafePrimePair(BigInteger minValue, BigInteger[] forbiddenValues) {
         BigInteger[] pair;
         boolean isSmallerThanMinValue, isForbidden;
-
         do {
             pair = generateSafePrimePair();
             isSmallerThanMinValue = pair[1].max(minValue).equals(minValue);
