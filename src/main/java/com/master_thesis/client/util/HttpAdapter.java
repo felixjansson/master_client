@@ -58,7 +58,7 @@ public class HttpAdapter {
     private List<Server> generateDummyServers() {
         List<Server> serverList = new LinkedList<>();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < localNumberOfServers; i++) {
             Server tmpServer = new Server();
             tmpServer.setUri(URI.create("localhost:200" + i));
             tmpServer.setServerID(i);
@@ -77,6 +77,7 @@ public class HttpAdapter {
             return objectMapper.readValue(response.body(), ClientStartupData.class);
         } catch (IOException | InterruptedException e) {
             log.error("Could not connect to Coordinator. Using default values");
+            local = true;
         }
         return new ClientStartupData();
     }
