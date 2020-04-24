@@ -3,6 +3,9 @@
     <module name="client.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.master_thesis.client.SmartMeter" />
     <option name="ALTERNATIVE_JRE_PATH" />
+    <RunnerSettings RunnerId="Debug with VisualVM">
+      <option name="visualVMId" value="309335420022900" />
+    </RunnerSettings>
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

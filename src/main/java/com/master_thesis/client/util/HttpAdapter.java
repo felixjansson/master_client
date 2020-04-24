@@ -5,10 +5,7 @@ import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.master_thesis.client.data.ComputationData;
-import com.master_thesis.client.data.Construction;
-import com.master_thesis.client.data.LinearSignatureData;
-import com.master_thesis.client.data.Server;
+import com.master_thesis.client.data.*;
 import lombok.SneakyThrows;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -20,6 +17,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +27,13 @@ public class HttpAdapter {
 
     private ObjectMapper objectMapper;
     private static final Logger log = (Logger) LoggerFactory.getLogger(HttpAdapter.class);
+    private boolean local = false;
+
+    private int localNumberOfServers = 15;
+    private BigInteger localFieldBase = BigInteger.valueOf(2011);
+    //    private BigInteger localFieldBase = BigInteger.ONE.shiftLeft(107).subtract(BigInteger.ONE);
+    private BigInteger localGenerator = BigInteger.valueOf(191);
+    private int localTSecure = 10;
 
     public HttpAdapter() {
         this.objectMapper = new ObjectMapper();
@@ -41,7 +46,8 @@ public class HttpAdapter {
 
     @SneakyThrows
     public List<Server> getServers() {
-
+        if (local)
+            return generateDummyServers();
         HttpRequest httpRequest = HttpRequest.newBuilder(URI.create("http://localhost:4000/api/server/list"))
                 .GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -49,17 +55,36 @@ public class HttpAdapter {
         });
     }
 
-    @SneakyThrows
-    public JsonNode registerClient() {
+    private List<Server> generateDummyServers() {
+        List<Server> serverList = new LinkedList<>();
+
+        for (int i = 0; i < 10; i++) {
+            Server tmpServer = new Server();
+            tmpServer.setUri(URI.create("localhost:200" + i));
+            tmpServer.setServerID(i);
+            serverList.add(tmpServer);
+        }
+        return serverList;
+    }
+
+    public ClientStartupData registerClient() {
         URI uri = URI.create("http://localhost:4000/api/client/register");
         HttpRequest request = HttpRequest.newBuilder(uri).POST(HttpRequest.BodyPublishers.noBody()).build();
-        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-        log.info(response.body());
-        return objectMapper.readValue(response.body(), JsonNode.class);
+        HttpResponse<String> response = null;
+        try {
+            response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            log.info(response.body());
+            return objectMapper.readValue(response.body(), ClientStartupData.class);
+        } catch (IOException | InterruptedException e) {
+            log.error("Could not connect to Coordinator. Using default values");
+        }
+        return new ClientStartupData();
     }
 
     @SneakyThrows
     public BigInteger getFieldBase(int substationID) {
+        if (local)
+            return localFieldBase;
         URI uri = URI.create("http://localhost:4000/api/setup/fieldBase/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -68,6 +93,8 @@ public class HttpAdapter {
 
     @SneakyThrows
     public BigInteger getGenerator(int substationID) {
+        if (local)
+            return localGenerator;
         URI uri = URI.create("http://localhost:4000/api/setup/generator/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -91,6 +118,8 @@ public class HttpAdapter {
 
     @SneakyThrows
     public int getTSecurity(int substationID) {
+        if (local)
+            return localTSecure;
         URI uri = URI.create("http://localhost:4000/api/setup/t-security/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -111,6 +140,8 @@ public class HttpAdapter {
 
     @SneakyThrows
     private void postRequest(URI uri, Object body) {
+        if (local)
+            return;
         boolean sending = true;
         String jsonObject = objectMapper.writeValueAsString(body);
         int tries = 10;
@@ -146,9 +177,17 @@ public class HttpAdapter {
 
     @SneakyThrows
     public LinearSignatureData.PublicData getLinearPublicData(int substationID, int fid) {
+        if (local)
+            return new LinearSignatureData.PublicData();
         URI uri = URI.create("http://localhost:4000/api/" + Construction.LINEAR.getEndpoint() + "/client/" + substationID + "/" + fid);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        log.debug("Linear Signature public data: {}", response.body());
         return objectMapper.readValue(response.body(), LinearSignatureData.PublicData.class);
+    }
+
+    public void toggleLocal() {
+        local = !local;
+        log.info("Local mode = {}.", local);
     }
 }

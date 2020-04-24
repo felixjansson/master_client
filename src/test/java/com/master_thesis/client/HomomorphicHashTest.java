@@ -2,21 +2,17 @@ package com.master_thesis.client;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.master_thesis.client.data.HomomorphicHashData;
 import com.master_thesis.client.data.Server;
 import com.master_thesis.client.util.PublicParameters;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class HomomorphicHashTest {
 
@@ -52,6 +48,6 @@ class HomomorphicHashTest {
 
     @org.junit.jupiter.api.Test
     void shareSecret() {
-        hh.shareSecret(5);
+        HomomorphicHashData res = hh.shareSecret(5);
     }
 }

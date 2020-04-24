@@ -31,7 +31,7 @@ public class SmartMeter {
     private HttpAdapter httpAdapter;
     private Scanner scanner;
     private int substationID;
-    private Collection<Construction> enabledConstructions = Stream.of(Construction.HASH, Construction.RSA, Construction.LINEAR).collect(Collectors.toSet());
+    private Collection<Construction> enabledConstructions = Stream.of(Construction.HASH, Construction.LINEAR).collect(Collectors.toSet());
 
 
     @Autowired
@@ -55,11 +55,12 @@ public class SmartMeter {
         boolean running = true;
         while (running) {
 
-            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. [d]elete all. [t]oggle construction. [any] to send shares. ", clientID);
+            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. [d]elete all. [t]oggle construction. [s]end shares. [local] toggles if servers are used.", clientID);
             while (!scanner.hasNext())
                 Thread.sleep(1000);
 
-            String input = scanner.next();
+            String input = scanner.nextLine();
+            log.debug("input: {}", input);
             switch (input.toLowerCase()) {
                 case "r":
                     register();
@@ -76,9 +77,14 @@ public class SmartMeter {
                 case "t":
                     toggleConstruction();
                     break;
-                default:
+                case "local":
+                    httpAdapter.toggleLocal();
+                    break;
+                case "s":
                     readAndSendShare();
                     break;
+                default:
+                    log.info("unknown command: [{}]", input);
             }
         }
     }
@@ -93,7 +99,7 @@ public class SmartMeter {
         do {
             System.out.printf("Client %s: Active: %s \n", clientID, enabledConstructions);
             System.out.printf("Client %s: Press to toggle [1 Hash] [2 RSA] [3 Linear] [4 Nonce] or [b]ack ", clientID);
-            input = scanner.next();
+            input = scanner.nextLine();
             if ("b".equals(input)) return;
         } while (!constructionMap.containsKey(input));
         Construction construction = constructionMap.get(input);
@@ -105,10 +111,10 @@ public class SmartMeter {
     }
 
     private void register() {
-        JsonNode jsonNode = httpAdapter.registerClient();
-        this.clientID = jsonNode.get("clientID").asInt();
-        this.substationID = jsonNode.get("substationID").asInt();
-        this.fid = jsonNode.get("startFid").asInt();
+        ClientStartupData jsonNode = httpAdapter.registerClient();
+        this.clientID = jsonNode.getClientID();
+        this.substationID = jsonNode.getSubstationID();
+        this.fid = jsonNode.getStartFid();
     }
 
     private void readAndSendShare() {

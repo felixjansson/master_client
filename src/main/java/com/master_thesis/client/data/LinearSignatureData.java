@@ -143,6 +143,16 @@ public class LinearSignatureData {
         private BigInteger N, NRoof, fidPrime, g1, g2;
         private BigInteger[] h, sk;
 
+        public PublicData() {
+            fidPrime = new BigInteger("1613215859");
+            g1 = new BigInteger("2568398478443538");
+            g2 = new BigInteger("2659009983791432712");
+            h = new BigInteger[]{new BigInteger("499392342719973602")};
+            sk = new BigInteger[]{new BigInteger("1802539883"), new BigInteger("3605079767")};
+            NRoof = new BigInteger("6498300061413847261");
+            N = new BigInteger("5178141996456738403");
+        }
+
         public BigInteger getN() {
             return N;
         }
