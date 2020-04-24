@@ -16,10 +16,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Component
@@ -29,11 +26,7 @@ public class HttpAdapter {
     private static final Logger log = (Logger) LoggerFactory.getLogger(HttpAdapter.class);
     private boolean local = false;
 
-    private int localNumberOfServers = 15;
-    private BigInteger localFieldBase = BigInteger.valueOf(2011);
-    //    private BigInteger localFieldBase = BigInteger.ONE.shiftLeft(107).subtract(BigInteger.ONE);
-    private BigInteger localGenerator = BigInteger.valueOf(191);
-    private int localTSecure = 10;
+    private DefaultPublicData defaultPublicData = new DefaultPublicData();
 
     public HttpAdapter() {
         this.objectMapper = new ObjectMapper();
@@ -58,7 +51,7 @@ public class HttpAdapter {
     private List<Server> generateDummyServers() {
         List<Server> serverList = new LinkedList<>();
 
-        for (int i = 0; i < localNumberOfServers; i++) {
+        for (int i = 0; i < defaultPublicData.getNumberOfServers(); i++) {
             Server tmpServer = new Server();
             tmpServer.setUri(URI.create("localhost:200" + i));
             tmpServer.setServerID(i);
@@ -85,7 +78,7 @@ public class HttpAdapter {
     @SneakyThrows
     public BigInteger getFieldBase(int substationID) {
         if (local)
-            return localFieldBase;
+            return defaultPublicData.getFieldBase();
         URI uri = URI.create("http://localhost:4000/api/setup/fieldBase/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -95,7 +88,7 @@ public class HttpAdapter {
     @SneakyThrows
     public BigInteger getGenerator(int substationID) {
         if (local)
-            return localGenerator;
+            return defaultPublicData.getGenerator();
         URI uri = URI.create("http://localhost:4000/api/setup/generator/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -120,7 +113,7 @@ public class HttpAdapter {
     @SneakyThrows
     public int getTSecurity(int substationID) {
         if (local)
-            return localTSecure;
+            return defaultPublicData.gettSecure();
         URI uri = URI.create("http://localhost:4000/api/setup/t-security/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -179,7 +172,7 @@ public class HttpAdapter {
     @SneakyThrows
     public LinearSignatureData.PublicData getLinearPublicData(int substationID, int fid) {
         if (local)
-            return new LinearSignatureData.PublicData();
+            return defaultPublicData.getLinearSignatureData();
         URI uri = URI.create("http://localhost:4000/api/" + Construction.LINEAR.getEndpoint() + "/client/" + substationID + "/" + fid);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -190,5 +183,9 @@ public class HttpAdapter {
     public void toggleLocal() {
         local = !local;
         log.info("Local mode = {}.", local);
+    }
+
+    public void changeDefaultValues(Scanner scanner) {
+        defaultPublicData.changeDefaultValues(scanner);
     }
 }

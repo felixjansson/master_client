@@ -55,7 +55,7 @@ public class SmartMeter {
         boolean running = true;
         while (running) {
 
-            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. [d]elete all. [t]oggle construction. [s]end shares. [local] toggles if servers are used.", clientID);
+            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. \n          [d]elete all. [t]oggle construction. [s]end shares. \n          [local] toggles if servers are used. [default] to change default values\n", clientID);
             while (!scanner.hasNext())
                 Thread.sleep(1000);
 
@@ -83,6 +83,9 @@ public class SmartMeter {
                 case "s":
                     readAndSendShare();
                     break;
+                case "default":
+                    httpAdapter.changeDefaultValues(scanner);
+                    break;
                 default:
                     log.info("unknown command: [{}]", input);
             }
@@ -93,12 +96,11 @@ public class SmartMeter {
         Map<String, Construction> constructionMap = Map.of(
                 "1", Construction.HASH,
                 "2", Construction.RSA,
-                "3", Construction.LINEAR,
-                "4", Construction.NONCE);
+                "3", Construction.LINEAR);
         String input;
         do {
             System.out.printf("Client %s: Active: %s \n", clientID, enabledConstructions);
-            System.out.printf("Client %s: Press to toggle [1 Hash] [2 RSA] [3 Linear] [4 Nonce] or [b]ack ", clientID);
+            System.out.printf("Client %s: Press to toggle [1 Hash] [2 RSA] [3 Linear] or [b]ack ", clientID);
             input = scanner.nextLine();
             if ("b".equals(input)) return;
         } while (!constructionMap.containsKey(input));
