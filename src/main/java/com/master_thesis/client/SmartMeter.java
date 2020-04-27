@@ -1,8 +1,6 @@
 package com.master_thesis.client;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.master_thesis.client.data.*;
 import com.master_thesis.client.util.HttpAdapter;
@@ -17,7 +15,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
-import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,10 +25,9 @@ public class SmartMeter {
     private Reader reader;
     private int fid;
     private int clientID;
-    private RSAThreshold RSAThresholdConstruction;
-    private HomomorphicHash homomorphicHashConstruction;
-    private LinearSignature linearSignatureConstruction;
-    private NonceDistribution nonceDistribution;
+    private RSAThreshold rsaThreshold;
+    private HomomorphicHash homomorphicHash;
+    private LinearSignature linearSignature;
     private HttpAdapter httpAdapter;
     private Scanner scanner;
     private int substationID;
@@ -39,12 +35,11 @@ public class SmartMeter {
 
 
     @Autowired
-    public SmartMeter(Reader reader, RSAThreshold RSAThresholdConstruction, HomomorphicHash homomorphicHashConstruction, LinearSignature linearSignatureConstruction, NonceDistribution nonceDistribution, HttpAdapter httpAdapter) {
+    public SmartMeter(Reader reader, RSAThreshold rsaThreshold, HomomorphicHash homomorphicHash, LinearSignature linearSignature, NonceDistribution nonceDistribution, HttpAdapter httpAdapter) {
         this.reader = reader;
-        this.RSAThresholdConstruction = RSAThresholdConstruction;
-        this.homomorphicHashConstruction = homomorphicHashConstruction;
-        this.linearSignatureConstruction = linearSignatureConstruction;
-        this.nonceDistribution = nonceDistribution;
+        this.rsaThreshold = rsaThreshold;
+        this.homomorphicHash = homomorphicHash;
+        this.linearSignature = linearSignature;
         this.httpAdapter = httpAdapter;
         register();
         scanner = new Scanner(System.in);
@@ -131,60 +126,75 @@ public class SmartMeter {
 
         if (enabledConstructions.contains(Construction.HASH)) {
             log.info("# FID: {} # Sending with {}", fid, Construction.HASH);
-            HomomorphicHashData data = homomorphicHashConstruction.shareSecret(secret);
+
+            // Here we perform the ShareSecret function from the Homomorphic Hash Construction.
+            HomomorphicHashData data = homomorphicHash.shareSecret(secret);
+
+            // We add identifiers to allow for multiple computations.
             data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
 
+            // We retrieve all shares going to the servers and send them.
             Map<URI, HomomorphicHashData.ServerData> serverDataMap = data.getServerData();
             serverDataMap.forEach(httpAdapter::sendServerShare);
 
+            // Get nonce data to send to the trusted party to compute R_n.
             httpAdapter.sendNonce(data.getNonceData());
+
+            // Get the tau (proof component) and make it publicly available.
             httpAdapter.sendProofComponent(data.getVerifierData());
 
+            // Prepare for the next computation.
             newFid();
         }
 
         if (enabledConstructions.contains(Construction.RSA)) {
             log.info("# FID: {} # Sending with {}", fid, Construction.RSA);
 
-            RSAThresholdData data = RSAThresholdConstruction.shareSecret(secret);
+            // Here we perform the ShareSecret function from the Threshold Signature Construction.
+            RSAThresholdData data = rsaThreshold.shareSecret(secret);
+
+            // We add identifiers to allow for multiple computations.
             data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
 
+            // We retrieve all shares going to the servers and send them.
             Map<URI, RSAThresholdData.ServerData> shareMap = data.getServerData();
             shareMap.forEach(httpAdapter::sendServerShare);
 
+            // Get nonce data to send to the trusted party to compute R_n.
             httpAdapter.sendNonce(data.getNonceData());
+
+            // Get the tau (proof component) and make it publicly available.
             httpAdapter.sendProofComponent(data.getVerifierData());
 
+            // Prepare for the next computation.
             newFid();
         }
 
         if (enabledConstructions.contains(Construction.LINEAR)) {
             log.info("# FID: {} # Sending with {}", fid, Construction.LINEAR);
-            LinearSignatureData data = linearSignatureConstruction.shareSecret(secret);
-            data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
-            data = linearSignatureConstruction.partialProof(data, secret);
 
+            // Here we perform the ShareSecret function from the Linear Signature Construction.
+            LinearSignatureData data = linearSignature.shareSecret(secret);
+
+            // We add identifiers to allow for multiple computations.
+            data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
+
+            // Using the result of the share secret function we compute the partial proof function from Linear Signature Construction
+            // The data variable is modified in the function and "replaced" when the partial proof function is completed.
+            data = linearSignature.partialProof(data, secret);
+
+            // We retrieve all shares going to the servers and send them.
             Map<URI, LinearSignatureData.ServerData> serverDataMap = data.getServerData();
             serverDataMap.forEach(httpAdapter::sendServerShare);
 
+            // Get nonce data to send to the trusted party to compute R_n.
             httpAdapter.sendNonce(data.getNonceData());
+
+            // Get the proof component (sigma) and make it publicly available.
             httpAdapter.sendProofComponent(data.getVerifierData());
 
+            // Prepare for the next computation.
             newFid();
-        }
-
-        if (enabledConstructions.contains(Construction.NONCE)) {
-            log.info("# FID: {} # Sending with {}", fid, Construction.NONCE);
-            NonceDistributionData data = nonceDistribution.shareSecret(secret);
-            data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
-
-            Map<URI, NonceDistributionData.ServerData> serverDataMap = data.getServerData();
-            serverDataMap.forEach(httpAdapter::sendServerShare);
-
-            httpAdapter.sendProofComponent(data.getVerifierData());
-
-            newFid();
-
         }
 
         log.info("=== Shares sent. Next fid {} ===", fid);

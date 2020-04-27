@@ -142,6 +142,8 @@ public class LinearSignatureData {
         private BigInteger N, NRoof, fidPrime, g1, g2;
         private BigInteger[] h, sk;
 
+        public PublicData() {};
+
         public PublicData(BigInteger n, BigInteger NRoof, BigInteger fidPrime, BigInteger g1, BigInteger g2, BigInteger[] h, BigInteger[] sk) {
             N = n;
             this.NRoof = NRoof;
