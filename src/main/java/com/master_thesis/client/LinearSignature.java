@@ -44,12 +44,12 @@ public class LinearSignature {
 
         // Compute server specific things
         List<Server> servers = publicParameters.getServers();
-        Set<Integer> polynomialInput = IntStream.range(1,servers.size() + 1).boxed().collect(Collectors.toSet());
-        Iterator<Integer> iteratorPolyInput = polynomialInput.iterator();
+        Set<BigInteger> polynomialInput = IntStream.range(1,servers.size() + 1).mapToObj(BigInteger::valueOf).collect(Collectors.toSet());
+        Iterator<BigInteger> iteratorPolyInput = polynomialInput.iterator();
         Map<URI, ServerData> shares = new HashMap<>();
         servers.forEach(server -> {
-            int number = iteratorPolyInput.next();
-            BigInteger share = polynomial.apply(number);
+            BigInteger number = iteratorPolyInput.next();
+            BigInteger share = polynomial.apply(number.intValue());
             share = share.multiply(beta(number, polynomialInput));
             shares.put(server.getUri().resolve(Construction.LINEAR.getEndpoint()), new ServerData(share));
         });
@@ -82,15 +82,14 @@ public class LinearSignature {
         };
     }
 
-    public BigInteger beta(int currentValue, Set<Integer> potentialValues){
-        BigInteger cv = BigInteger.valueOf(currentValue);
-        BigInteger nominator = potentialValues.stream().map(BigInteger::valueOf)
-                .filter(x -> !x.equals(cv))
+    public BigInteger beta(BigInteger currentValue, Set<BigInteger> potentialValues){
+        BigInteger nominator = potentialValues.stream()
+                .filter(x -> !x.equals(currentValue))
                 .reduce(BigInteger.ONE, BigInteger::multiply);
-        BigInteger denominator = potentialValues.stream().map(BigInteger::valueOf)
-                .filter(x -> !x.equals(cv))
-                .reduce(BigInteger.ONE, (prev, x) -> prev.multiply(x.subtract(cv)));
-        log.debug("beta values: {}/{} = {}", nominator, denominator, nominator.divideAndRemainder(denominator));
+        BigInteger denominator = potentialValues.stream()
+                .filter(x -> !x.equals(currentValue))
+                .reduce(BigInteger.ONE, (prev, x) -> prev.multiply(x.subtract(currentValue)));
+//        log.debug("beta values: {}/{} = {}", nominator, denominator, nominator.divideAndRemainder(denominator));
         return nominator.divide(denominator);
     }
 

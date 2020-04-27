@@ -1,6 +1,8 @@
 package com.master_thesis.client;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.master_thesis.client.data.*;
 import com.master_thesis.client.util.HttpAdapter;
@@ -13,7 +15,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
+import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,13 +59,11 @@ public class SmartMeter {
         boolean running = true;
         while (running) {
 
-            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. \n          [d]elete all. [t]oggle construction. [s]end shares. \n          [local] toggles if servers are used. [default] to change default values\n", clientID);
-            while (!scanner.hasNext())
-                Thread.sleep(1000);
+            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. \n          [d]elete all. [t]oggle construction. [s]end shares. \n          [local] toggles if servers are used. [default] to change default values\n          [run many] to run many.\n", clientID);
 
             String input = scanner.nextLine();
             log.debug("input: {}", input);
-            switch (input.toLowerCase()) {
+            switch (input.toLowerCase().replaceAll("\\s", "")) {
                 case "r":
                     register();
                     break;
@@ -82,6 +84,9 @@ public class SmartMeter {
                     break;
                 case "s":
                     readAndSendShare();
+                    break;
+                case "runmany":
+                    runMany();
                     break;
                 case "default":
                     httpAdapter.changeDefaultValues(scanner);
@@ -120,7 +125,8 @@ public class SmartMeter {
     }
 
     private void readAndSendShare() {
-        int secret = reader.readValue();
+//        int secret = reader.readValue();
+        int secret = new Random().nextInt(214748364);
         log.info("=== Starting new share ===");
 
         if (enabledConstructions.contains(Construction.HASH)) {
@@ -183,6 +189,15 @@ public class SmartMeter {
 
         log.info("=== Shares sent. Next fid {} ===", fid);
 
+    }
+
+    private void runMany() {
+        System.out.println("How many? ");
+        int runs = scanner.nextInt();
+        scanner.nextLine();
+        for (int i = 0; i < runs; i++) {
+            readAndSendShare();
+        }
     }
 
     private String listClients() {

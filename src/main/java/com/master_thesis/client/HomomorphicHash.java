@@ -5,6 +5,7 @@ import com.master_thesis.client.data.Construction;
 import com.master_thesis.client.data.HomomorphicHashData;
 import com.master_thesis.client.data.Server;
 import com.master_thesis.client.util.PublicParameters;
+import javafx.beans.binding.IntegerBinding;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
