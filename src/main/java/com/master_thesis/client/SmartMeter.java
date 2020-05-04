@@ -7,6 +7,7 @@ import com.master_thesis.client.util.HttpAdapter;
 import com.master_thesis.client.util.Reader;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -35,14 +36,21 @@ public class SmartMeter {
 
 
     @Autowired
-    public SmartMeter(Reader reader, RSAThreshold rsaThreshold, HomomorphicHash homomorphicHash, LinearSignature linearSignature, NonceDistribution nonceDistribution, HttpAdapter httpAdapter) {
+    public SmartMeter(ApplicationArguments args, Reader reader, RSAThreshold rsaThreshold, HomomorphicHash homomorphicHash, LinearSignature linearSignature, HttpAdapter httpAdapter) {
         this.reader = reader;
         this.rsaThreshold = rsaThreshold;
         this.homomorphicHash = homomorphicHash;
         this.linearSignature = linearSignature;
         this.httpAdapter = httpAdapter;
-        register();
+
+        if (args.containsOption("local")) {
+            httpAdapter.toggleLocal();
+        } else {
+            register();
+        }
+
         scanner = new Scanner(System.in);
+
     }
 
     public static void main(String[] args) {

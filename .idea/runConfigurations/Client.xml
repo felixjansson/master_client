@@ -2,6 +2,7 @@
   <configuration default="false" name="Client" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <module name="client.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.master_thesis.client.SmartMeter" />
+    <option name="PROGRAM_PARAMETERS" value="--local" />
     <option name="ALTERNATIVE_JRE_PATH" />
     <RunnerSettings RunnerId="Debug with VisualVM">
       <option name="visualVMId" value="309335420022900" />
