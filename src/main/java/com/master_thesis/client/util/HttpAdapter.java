@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.master_thesis.client.data.*;
 import lombok.SneakyThrows;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -26,10 +27,12 @@ public class HttpAdapter {
     private static final Logger log = (Logger) LoggerFactory.getLogger(HttpAdapter.class);
     private boolean local = false;
 
-    private DefaultPublicData defaultPublicData = new DefaultPublicData();
+    private DefaultPublicData defaultPublicData;
 
-    public HttpAdapter() {
+    @Autowired
+    public HttpAdapter(DefaultPublicData defaultPublicData) {
         this.objectMapper = new ObjectMapper();
+        this.defaultPublicData = defaultPublicData;
     }
 
     @SneakyThrows
@@ -185,7 +188,23 @@ public class HttpAdapter {
         log.info("Local mode = {}.", local);
     }
 
+    public void updateLocalValues() {
+        defaultPublicData.getLinearSignatureData();
+        defaultPublicData.getFieldBase();
+        defaultPublicData.getGenerator();
+        defaultPublicData.getNumberOfServers();
+        defaultPublicData.gettSecure();
+    }
+
     public void changeDefaultValues(Scanner scanner) {
         defaultPublicData.changeDefaultValues(scanner);
+    }
+
+    public int getRunTimes() {
+        return defaultPublicData.getRunTimes();
+    }
+
+    public int getConstruction() {
+        return defaultPublicData.getConstruction();
     }
 }

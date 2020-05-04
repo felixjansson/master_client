@@ -2,34 +2,46 @@ package com.master_thesis.client.data;
 
 import ch.qos.logback.classic.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.stereotype.Component;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Scanner;
+import java.util.Set;
 
+@Component
+@PropertySource("classpath:values.properties")
 public class DefaultPublicData {
 
-    private int numberOfServers = 15;
+    @Value("${numberOfServers}")
+    private int numberOfServers;
     //    private BigInteger localFieldBase = BigInteger.valueOf(2011);
-    private BigInteger fieldBase = BigInteger.ONE.shiftLeft(107).subtract(BigInteger.ONE);
-    private BigInteger generator = BigInteger.valueOf(191);
-    private int tSecure = 10;
+    @Value("${fieldBase_bits}")
+    private int fieldBase_bits;
+    @Value("${generator_bits}")
+    private int generator_bits;
+    @Value("${t_secure}")
+    private int tSecure;
     private LinearSignatureData.PublicData linearSignatureData;
+
     private final SecureRandom random = new SecureRandom();
     private static final Logger log = (Logger) LoggerFactory.getLogger(DefaultPublicData.class);
+    @Value("${k}")
     private int PRIME_BIT_LENGTH = 64;
+    @Value("${k_prime}")
     private int PRIME_BIT_LENGTH_PRIME = 64;
+    @Value("${runs}")
+    private int runTimes;
+    @Value("${construction}")
+    private int construction;
+    private BigInteger fieldBase;
+    private BigInteger generator;
 
-    public DefaultPublicData() {
-        linearSignatureData = new LinearSignatureData.PublicData(
-                new BigInteger("5178141996456738403"),
-                new BigInteger("6498300061413847261"),
-                new BigInteger("1613215859"),
-                new BigInteger("2568398478443538"),
-                new BigInteger("2659009983791432712"),
-                new BigInteger[]{new BigInteger("499392342719973602")},
-                new BigInteger[]{new BigInteger("1802539883"), new BigInteger("3605079767")}
-        );
+    public int getRunTimes() {
+        return runTimes;
     }
 
     public int getNumberOfServers() {
@@ -41,6 +53,11 @@ public class DefaultPublicData {
     }
 
     public BigInteger getFieldBase() {
+        if (fieldBase == null) {
+            do {
+                fieldBase = new BigInteger(fieldBase_bits, 16, random);
+            } while (fieldBase.bitLength() != fieldBase_bits);
+        }
         return fieldBase;
     }
 
@@ -49,7 +66,12 @@ public class DefaultPublicData {
     }
 
     public BigInteger getGenerator() {
-        return generator;
+        if (generator == null) {
+            do {
+                generator = new BigInteger(generator_bits, 16, random);
+            } while (generator.bitLength() != generator_bits);
+        }
+        return fieldBase;
     }
 
     public void setGenerator(BigInteger generator) {
@@ -155,6 +177,13 @@ public class DefaultPublicData {
     }
 
     public LinearSignatureData.PublicData getLinearSignatureData() {
+        if (linearSignatureData == null) {
+            generateLinearSignatureData();
+        }
         return linearSignatureData;
+    }
+
+    public int getConstruction() {
+        return construction;
     }
 }

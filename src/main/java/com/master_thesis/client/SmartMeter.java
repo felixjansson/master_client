@@ -32,24 +32,24 @@ public class SmartMeter {
     private HttpAdapter httpAdapter;
     private Scanner scanner;
     private int substationID;
+    private ApplicationArguments args;
     private Collection<Construction> enabledConstructions = Stream.of(Construction.HASH, Construction.LINEAR).collect(Collectors.toSet());
 
 
     @Autowired
     public SmartMeter(ApplicationArguments args, Reader reader, RSAThreshold rsaThreshold, HomomorphicHash homomorphicHash, LinearSignature linearSignature, HttpAdapter httpAdapter) {
+        this.args = args;
         this.reader = reader;
         this.rsaThreshold = rsaThreshold;
         this.homomorphicHash = homomorphicHash;
         this.linearSignature = linearSignature;
         this.httpAdapter = httpAdapter;
 
-        if (args.containsOption("local")) {
+        if (args.containsOption("local") || args.containsOption("test")) {
             httpAdapter.toggleLocal();
         } else {
             register();
         }
-
-        scanner = new Scanner(System.in);
 
     }
 
@@ -59,6 +59,24 @@ public class SmartMeter {
 
     @Autowired
     public void run() throws InterruptedException {
+
+        if (args.containsOption("test")) {
+
+            httpAdapter.updateLocalValues();
+            Map<Integer, Construction> constructionMap = Map.of(
+                    1, Construction.HASH,
+                    2, Construction.RSA,
+                    3, Construction.LINEAR);
+            enabledConstructions.clear();
+            enabledConstructions.add(constructionMap.get(httpAdapter.getConstruction()));
+            int runs = httpAdapter.getRunTimes();
+            for (int i = 0; i < runs; i++) {
+                readAndSendShare();
+            }
+            return;
+        }
+
+        scanner = new Scanner(System.in);
         boolean running = true;
         while (running) {
 
