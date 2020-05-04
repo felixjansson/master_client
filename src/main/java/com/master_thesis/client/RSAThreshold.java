@@ -13,6 +13,8 @@ import org.ejml.dense.row.SingularOps_DDRM;
 import org.ejml.simple.SimpleMatrix;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 import java.math.BigInteger;
@@ -24,14 +26,17 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Component("rsa")
+@PropertySource("classpath:values.properties")
 public class RSAThreshold {
     private final static SecureRandom random = new SecureRandom();
     private final static BigInteger one = BigInteger.ONE;
     private static final Logger log = (Logger) LoggerFactory.getLogger(RSAThreshold.class);
 
 
-    private static final int KEY_BIT_LENGTH = 12;
-    private static final int RSA_PRIME_BIT_LENGTH = 12;
+    @Value("${RSA_BIT_LENGTH}")
+    private int KEY_BIT_LENGTH;
+    @Value("${RSA_PRIME_BIT_LENGTH}")
+    private int RSA_PRIME_BIT_LENGTH;
 
     private BigInteger privateKey;
     private BigInteger publicKey;
@@ -205,6 +210,8 @@ public class RSAThreshold {
     }
 
     void generateRSAPrimes(BigInteger fieldBase) {
+        if (fieldBase.compareTo(BigInteger.TWO.pow(RSA_PRIME_BIT_LENGTH)) >= 0)
+            throw new RuntimeException("FieldBase bit length is higher than RSA primes. RSA must be larger.");
         BigInteger[] pPair = generateConstrainedSafePrimePair(fieldBase, new BigInteger[]{});
         BigInteger[] qPair = generateConstrainedSafePrimePair(fieldBase, pPair);
         rsaNPrime = pPair[0].multiply(qPair[0]);
@@ -215,19 +222,19 @@ public class RSAThreshold {
         BigInteger[] pair;
         boolean isSmallerThanMinValue, isForbidden;
         do {
-            pair = generateSafePrimePair();
+            pair = generateSafePrimePair(minValue);
             isSmallerThanMinValue = pair[1].max(minValue).equals(minValue);
             isForbidden = Arrays.equals(pair, forbiddenValues);
         } while (isForbidden || isSmallerThanMinValue);
         return pair;
     }
 
-    private BigInteger[] generateSafePrimePair() {
+    private BigInteger[] generateSafePrimePair(BigInteger minValue) {
         BigInteger p, q;
         do {
             p = new BigInteger(RSA_PRIME_BIT_LENGTH, 16, random);
             q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
-        } while (!q.isProbablePrime(16));
+        } while (!q.isProbablePrime(16) || p.compareTo(minValue) < 1);
         return new BigInteger[]{q, p};
     }
 
@@ -236,7 +243,7 @@ public class RSAThreshold {
         do {
             // Generate a public key with gcd=1 with determinant and 2p'q'
             publicKey = new BigInteger(KEY_BIT_LENGTH, 16, random);
-        } while (!determinant.gcd(publicKey).equals(one) || !rsaNPrimeTwo.gcd(publicKey).equals(BigInteger.ONE));
+        } while ((!determinant.gcd(publicKey).equals(one) || !rsaNPrimeTwo.gcd(publicKey).equals(BigInteger.ONE)) || publicKey.bitLength() != KEY_BIT_LENGTH);
         privateKey = publicKey.modInverse(rsaNPrimeTwo);
     }
 

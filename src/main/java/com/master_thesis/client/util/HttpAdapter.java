@@ -60,6 +60,7 @@ public class HttpAdapter {
             tmpServer.setServerID(i);
             serverList.add(tmpServer);
         }
+
         return serverList;
     }
 
