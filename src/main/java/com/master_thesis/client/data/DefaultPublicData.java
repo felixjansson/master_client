@@ -13,7 +13,7 @@ import java.util.Scanner;
 import java.util.Set;
 
 @Component
-@PropertySource("classpath:values.properties")
+@PropertySource("classpath:local.properties")
 public class DefaultPublicData {
 
     @Value("${numberOfServers}")

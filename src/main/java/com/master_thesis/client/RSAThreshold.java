@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Component("rsa")
-@PropertySource("classpath:values.properties")
+@PropertySource("classpath:local.properties")
 public class RSAThreshold {
     private final static SecureRandom random = new SecureRandom();
     private final static BigInteger one = BigInteger.ONE;

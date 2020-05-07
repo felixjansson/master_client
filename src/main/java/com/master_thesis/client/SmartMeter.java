@@ -61,18 +61,7 @@ public class SmartMeter {
     public void run() throws InterruptedException {
 
         if (args.containsOption("test")) {
-
-            httpAdapter.updateLocalValues();
-            Map<Integer, Construction> constructionMap = Map.of(
-                    1, Construction.HASH,
-                    2, Construction.RSA,
-                    3, Construction.LINEAR);
-            enabledConstructions.clear();
-            enabledConstructions.add(constructionMap.get(httpAdapter.getConstruction()));
-            int runs = httpAdapter.getRunTimes();
-            for (int i = 0; i < runs; i++) {
-                readAndSendShare();
-            }
+            runTest();
             return;
         }
 
@@ -112,9 +101,33 @@ public class SmartMeter {
                 case "default":
                     httpAdapter.changeDefaultValues(scanner);
                     break;
+                case "test":
+                    runTest();
+                    break;
                 default:
+                    if ("123".contains(input)) {
+                        runTest(Integer.parseInt(input));
+                    }
                     log.info("unknown command: [{}]", input);
             }
+        }
+    }
+
+    private void runTest() {
+        runTest(httpAdapter.getConstruction());
+    }
+
+    private void runTest(int construction) {
+        httpAdapter.updateLocalValues();
+        Map<Integer, Construction> constructionMap = Map.of(
+                1, Construction.HASH,
+                2, Construction.RSA,
+                3, Construction.LINEAR);
+        enabledConstructions.clear();
+        enabledConstructions.add(constructionMap.get(construction));
+        int runs = httpAdapter.getRunTimes();
+        for (int i = 0; i < runs; i++) {
+            readAndSendShare();
         }
     }
 
