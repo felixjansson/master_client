@@ -8,8 +8,6 @@ import com.master_thesis.client.data.RSAThresholdData.ServerData;
 import com.master_thesis.client.data.RSAThresholdData.VerifierData;
 import com.master_thesis.client.data.Server;
 import com.master_thesis.client.util.PublicParameters;
-import org.ejml.data.DMatrixRMaj;
-import org.ejml.dense.row.SingularOps_DDRM;
 import org.ejml.simple.SimpleMatrix;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +51,7 @@ public class RSAThreshold {
 
     /**
      * This is the share secret function from the Threshold Signature construction.
+     *
      * @param int_secret the input is the secret that should be shared.
      * @return An object with data that should be sent.
      */
@@ -117,8 +116,9 @@ public class RSAThreshold {
 
     /**
      * This function creates a polynomial that will take an input and return the result.
+     *
      * @param secret This will be the result for input = 0.
-     * @param field The polynomial is computed mod field.
+     * @param field  The polynomial is computed mod field.
      * @return A function that can take 1 value as input.
      */
     protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {
@@ -162,11 +162,12 @@ public class RSAThreshold {
 
     /**
      * In this function a Lagrange Basis Coefficient is computed.
-     * @param currentValue The value for which to compute the Lagrange cofficient.
+     *
+     * @param currentValue    The value for which to compute the Lagrange cofficient.
      * @param potentialValues All input values to the polynomial.
      * @return The result of the computation. A single value.
      */
-    public BigInteger computeLagrangeCoefficient(BigInteger currentValue, Set<BigInteger> potentialValues){
+    public BigInteger computeLagrangeCoefficient(BigInteger currentValue, Set<BigInteger> potentialValues) {
         // Compute the nominator, the product of all inputs except for the one that is the currentValue.
         BigInteger nominator = potentialValues.stream()
                 .filter(x -> !x.equals(currentValue))
@@ -193,20 +194,20 @@ public class RSAThreshold {
     // TODO: 2020-03-09 What should we do when 'm' or 't' is zero? 
     private SimpleMatrix generateMatrixOfClient(BigInteger fieldBase) {
         int m = publicParameters.getServers().size();
-        DMatrixRMaj dMatrixRMaj = new DMatrixRMaj(m, securityThreshold);
         SimpleMatrix matrixOfClient = null;
         BigInteger determinant = BigInteger.ZERO;
+        double[][] internalMatrix = new double[m][securityThreshold];
         boolean isFullRank = false;
         while ((m != 0 && securityThreshold != 0) && !isFullRank || determinant.equals(BigInteger.ZERO)) {
             for (int row = 0; row < m; row++) {
                 for (int col = 0; col < securityThreshold; col++) {
                     int value = getRandomElementInField(fieldBase);
-                    dMatrixRMaj.set(row, col, value);
+                    internalMatrix[row][col] = value;
                 }
             }
-            int rank = SingularOps_DDRM.rank(dMatrixRMaj);
+            int rank = rankOfMatrix(internalMatrix);
             isFullRank = rank == Math.min(securityThreshold, m);
-            matrixOfClient = new SimpleMatrix(dMatrixRMaj);
+            matrixOfClient = new SimpleMatrix(internalMatrix);
             determinant = BigInteger.valueOf(Math.round(matrixOfClient.rows(0, matrixOfClient.numCols()).determinant()));
         }
         return matrixOfClient;
@@ -252,6 +253,52 @@ public class RSAThreshold {
             publicKey = new BigInteger(KEY_BIT_LENGTH, 16, random);
         } while ((!determinant.gcd(publicKey).equals(one) || !rsaNPrimeTwo.gcd(publicKey).equals(BigInteger.ONE)) || publicKey.bitLength() != KEY_BIT_LENGTH);
         privateKey = publicKey.modInverse(rsaNPrimeTwo);
+    }
+
+    private void swap(double[][] mat, int row1, int row2, int col) {
+        for (int i = 0; i < col; i++) {
+            double temp = mat[row1][i];
+            mat[row1][i] = mat[row2][i];
+            mat[row2][i] = temp;
+        }
+    }
+
+    private int rankOfMatrix(double[][] mat) {
+        int rank = mat[0].length;
+        for (int row = 0; row < rank; row++) {
+
+            if (mat[row][row] != 0) {
+                for (int col = 0; col < mat.length; col++) {
+                    if (col != row) {
+
+                        double mult =
+                                (double) mat[col][row] /
+                                        mat[row][row];
+
+                        for (int i = 0; i < rank; i++)
+
+                            mat[col][i] -= mult
+                                    * mat[row][i];
+                    }
+                }
+            } else {
+                boolean reduce = true;
+                for (int i = row + 1; i < mat.length; i++) {
+                    if (mat[i][row] != 0) {
+                        swap(mat, row, i, rank);
+                        reduce = false;
+                        break;
+                    }
+                }
+                if (reduce) {
+                    rank--;
+                    for (int i = 0; i < mat.length; i++)
+                        mat[i][row] = mat[i][rank];
+                }
+                row--;
+            }
+        }
+        return rank;
     }
 
 }
