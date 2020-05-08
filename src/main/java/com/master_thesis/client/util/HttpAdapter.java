@@ -208,4 +208,8 @@ public class HttpAdapter {
     public int getConstruction() {
         return defaultPublicData.getConstruction();
     }
+
+    public DefaultPublicData getDefaultPublicData() {
+        return defaultPublicData;
+    }
 }

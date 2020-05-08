@@ -135,6 +135,36 @@ public class SmartMeter {
             readAndSendShare();
         }
         System.out.println("TEST DONE!\n");
+        printCSVData(constructionMap.get(construction));
+    }
+
+    private void printCSVData(Construction construction) {
+        StringJoiner sb = new StringJoiner(",");
+        DefaultPublicData dpd = httpAdapter.getDefaultPublicData();
+        sb.add(Integer.toString(dpd.getRunTimes()));
+        sb.add(Integer.toString(dpd.gettSecure()));
+        sb.add(Integer.toString(dpd.getNumberOfServers()));
+        switch (construction) {
+            case HASH:
+                sb.add(Integer.toString(dpd.getFieldBase_bits()));
+                sb.add(Integer.toString(dpd.getGenerator_bits()));
+                break;
+            case RSA:
+                sb.add(Integer.toString(dpd.getFieldBase_bits()));
+                sb.add(Integer.toString(dpd.getGenerator_bits()));
+                sb.add(Integer.toString(dpd.getRSA_BIT_LENGTH()));
+                sb.add(Integer.toString(dpd.getRSA_PRIME_BIT_LENGTH()));
+                break;
+            case LINEAR:
+                sb.add(Integer.toString(dpd.getPRIME_BIT_LENGTH()));
+                sb.add(Integer.toString(dpd.getPRIME_BIT_LENGTH_PRIME()));
+                break;
+            case NONCE:
+                break;
+        }
+        sb.add(new SimpleDateFormat("MMdd-HHmm").format(new Date()));
+        System.out.println("CSV print for " + construction);
+        System.out.println(sb.toString());
     }
 
     private void toggleConstruction() {

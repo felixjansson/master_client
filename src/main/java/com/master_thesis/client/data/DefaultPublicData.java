@@ -37,6 +37,13 @@ public class DefaultPublicData {
     private int runTimes;
     @Value("${construction}")
     private int construction;
+
+    @Value("${RSA_BIT_LENGTH}")
+    private int RSA_BIT_LENGTH;
+    @Value("${RSA_PRIME_BIT_LENGTH}")
+    private int RSA_PRIME_BIT_LENGTH;
+
+
     private BigInteger fieldBase;
     private BigInteger generator;
 
@@ -185,5 +192,29 @@ public class DefaultPublicData {
 
     public int getConstruction() {
         return construction;
+    }
+
+    public int getFieldBase_bits() {
+        return fieldBase_bits;
+    }
+
+    public int getGenerator_bits() {
+        return generator_bits;
+    }
+
+    public int getPRIME_BIT_LENGTH() {
+        return PRIME_BIT_LENGTH;
+    }
+
+    public int getPRIME_BIT_LENGTH_PRIME() {
+        return PRIME_BIT_LENGTH_PRIME;
+    }
+
+    public int getRSA_PRIME_BIT_LENGTH() {
+        return RSA_PRIME_BIT_LENGTH;
+    }
+
+    public int getRSA_BIT_LENGTH() {
+        return RSA_BIT_LENGTH;
     }
 }
