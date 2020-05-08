@@ -12,10 +12,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.net.URI;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Random;
-import java.util.Scanner;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -126,9 +124,17 @@ public class SmartMeter {
         enabledConstructions.clear();
         enabledConstructions.add(constructionMap.get(construction));
         int runs = httpAdapter.getRunTimes();
+        double percentageInterval = 0.02d;
+        int progressStep = (int) Math.round((double)runs * percentageInterval);
         for (int i = 0; i < runs; i++) {
+//            Give some graphical feedback that it's alive! :)))
+            if (i % progressStep == 1){
+                int percentage = Math.round(((float) i / (float) runs) * 100f);
+                System.out.println("Progress: " + percentage + "%");
+            }
             readAndSendShare();
         }
+        System.out.println("TEST DONE!\n");
     }
 
     private void toggleConstruction() {
@@ -160,7 +166,7 @@ public class SmartMeter {
 
     private void readAndSendShare() {
 //        int secret = reader.readValue();
-        int secret = new Random().nextInt(214748364);
+        int secret = new Random().nextInt(1000);
         log.info("=== Starting new share ===");
 
         if (enabledConstructions.contains(Construction.HASH)) {
