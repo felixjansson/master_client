@@ -67,7 +67,10 @@ public class RSAThreshold {
         // Here we generate the primes, matrix and secret/public keys that will be used in this computation.
         generateRSAPrimes(fieldBase);
         SimpleMatrix matrixOfClient = generateMatrixOfClient(fieldBase);
-        generateRSAKeys(BigInteger.valueOf(Math.round(matrixOfClient.rows(0, matrixOfClient.numCols()).determinant())));
+        BigInteger determinant = BigInteger.valueOf(Math.round(matrixOfClient.rows(0, matrixOfClient.numCols()).determinant()));
+        if (determinant.equals(BigInteger.ZERO))
+            throw new RuntimeException("ERROR: The determinant of matrixOfClient is zero");
+        generateRSAKeys(determinant);
         SimpleMatrix skv = generateSKVector(fieldBase);
         SimpleMatrix skShares = matrixOfClient.mult(skv);
 
@@ -191,8 +194,10 @@ public class RSAThreshold {
     private SimpleMatrix generateMatrixOfClient(BigInteger fieldBase) {
         int m = publicParameters.getServers().size();
         DMatrixRMaj dMatrixRMaj = new DMatrixRMaj(m, securityThreshold);
+        SimpleMatrix matrixOfClient = null;
+        BigInteger determinant = BigInteger.ZERO;
         boolean isFullRank = false;
-        while ((m != 0 && securityThreshold != 0) && !isFullRank) {
+        while ((m != 0 && securityThreshold != 0) && !isFullRank || determinant.equals(BigInteger.ZERO)) {
             for (int row = 0; row < m; row++) {
                 for (int col = 0; col < securityThreshold; col++) {
                     int value = getRandomElementInField(fieldBase);
@@ -201,8 +206,10 @@ public class RSAThreshold {
             }
             int rank = SingularOps_DDRM.rank(dMatrixRMaj);
             isFullRank = rank == Math.min(securityThreshold, m);
+            matrixOfClient = new SimpleMatrix(dMatrixRMaj);
+            determinant = BigInteger.valueOf(Math.round(matrixOfClient.rows(0, matrixOfClient.numCols()).determinant()));
         }
-        return new SimpleMatrix(dMatrixRMaj);
+        return matrixOfClient;
     }
 
     private int getRandomElementInField(BigInteger fieldBase) {
