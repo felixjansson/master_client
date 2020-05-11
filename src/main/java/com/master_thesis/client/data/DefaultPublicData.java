@@ -46,6 +46,8 @@ public class DefaultPublicData {
 
     private BigInteger fieldBase;
     private BigInteger generator;
+    private BigInteger rsaNPrime;
+    private BigInteger rsaN;
 
     public int getRunTimes() {
         return runTimes;
@@ -217,4 +219,40 @@ public class DefaultPublicData {
     public int getRSA_BIT_LENGTH() {
         return RSA_BIT_LENGTH;
     }
+
+    public BigInteger[] getRSASecretPrimes() {
+        if (rsaN == null || rsaNPrime == null)
+            generateRSAPrimes(getFieldBase());
+        return new BigInteger[] {rsaN, rsaNPrime};
+    }
+
+    void generateRSAPrimes(BigInteger fieldBase) {
+        if (fieldBase.compareTo(BigInteger.TWO.pow(RSA_PRIME_BIT_LENGTH)) >= 0)
+            throw new RuntimeException("FieldBase bit length is higher than RSA primes. RSA must be larger.");
+        BigInteger[] pPair = generateConstrainedSafePrimePair(fieldBase, new BigInteger[]{});
+        BigInteger[] qPair = generateConstrainedSafePrimePair(fieldBase, pPair);
+        rsaNPrime = pPair[0].multiply(qPair[0]);
+        rsaN = pPair[1].multiply(qPair[1]);
+    }
+
+    private BigInteger[] generateConstrainedSafePrimePair(BigInteger minValue, BigInteger[] forbiddenValues) {
+        BigInteger[] pair;
+        boolean isSmallerThanMinValue, isForbidden;
+        do {
+            pair = generateSafePrimePair(minValue);
+            isSmallerThanMinValue = pair[1].max(minValue).equals(minValue);
+            isForbidden = Arrays.equals(pair, forbiddenValues);
+        } while (isForbidden || isSmallerThanMinValue);
+        return pair;
+    }
+
+    private BigInteger[] generateSafePrimePair(BigInteger minValue) {
+        BigInteger p, q;
+        do {
+            p = new BigInteger(RSA_PRIME_BIT_LENGTH, 16, random);
+            q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
+        } while (!q.isProbablePrime(16) || p.compareTo(minValue) < 1);
+        return new BigInteger[]{q, p};
+    }
+
 }

@@ -64,7 +64,9 @@ public class RSAThreshold {
         BigInteger secret = BigInteger.valueOf(int_secret);
 
         // Here we generate the primes, matrix and secret/public keys that will be used in this computation.
-        generateRSAPrimes(fieldBase);
+        BigInteger[] rsaNValues = publicParameters.getRsaN(substationID);
+        rsaN = rsaNValues[0];
+        rsaNPrime = rsaNValues[1];
         SimpleMatrix matrixOfClient = generateMatrixOfClient(fieldBase);
         BigInteger determinant = BigInteger.valueOf(Math.round(matrixOfClient.rows(0, matrixOfClient.numCols()).determinant()));
         if (determinant.equals(BigInteger.ZERO))
@@ -217,35 +219,6 @@ public class RSAThreshold {
         return Math.abs(random.nextInt()) % fieldBase.intValue();
     }
 
-    void generateRSAPrimes(BigInteger fieldBase) {
-        if (fieldBase.compareTo(BigInteger.TWO.pow(RSA_PRIME_BIT_LENGTH)) >= 0)
-            throw new RuntimeException("FieldBase bit length is higher than RSA primes. RSA must be larger.");
-        BigInteger[] pPair = generateConstrainedSafePrimePair(fieldBase, new BigInteger[]{});
-        BigInteger[] qPair = generateConstrainedSafePrimePair(fieldBase, pPair);
-        rsaNPrime = pPair[0].multiply(qPair[0]);
-        rsaN = pPair[1].multiply(qPair[1]);
-    }
-
-    private BigInteger[] generateConstrainedSafePrimePair(BigInteger minValue, BigInteger[] forbiddenValues) {
-        BigInteger[] pair;
-        boolean isSmallerThanMinValue, isForbidden;
-        do {
-            pair = generateSafePrimePair(minValue);
-            isSmallerThanMinValue = pair[1].max(minValue).equals(minValue);
-            isForbidden = Arrays.equals(pair, forbiddenValues);
-        } while (isForbidden || isSmallerThanMinValue);
-        return pair;
-    }
-
-    private BigInteger[] generateSafePrimePair(BigInteger minValue) {
-        BigInteger p, q;
-        do {
-            p = new BigInteger(RSA_PRIME_BIT_LENGTH, 16, random);
-            q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
-        } while (!q.isProbablePrime(16) || p.compareTo(minValue) < 1);
-        return new BigInteger[]{q, p};
-    }
-
     private void generateRSAKeys(BigInteger determinant) {
         BigInteger rsaNPrimeTwo = rsaNPrime.multiply(BigInteger.TWO);
         do {
@@ -266,19 +239,12 @@ public class RSAThreshold {
     private int rankOfMatrix(double[][] mat) {
         int rank = mat[0].length;
         for (int row = 0; row < rank; row++) {
-
             if (mat[row][row] != 0) {
                 for (int col = 0; col < mat.length; col++) {
                     if (col != row) {
-
-                        double mult =
-                                (double) mat[col][row] /
-                                        mat[row][row];
-
+                        double mult = mat[col][row] / mat[row][row];
                         for (int i = 0; i < rank; i++)
-
-                            mat[col][i] -= mult
-                                    * mat[row][i];
+                            mat[col][i] -= mult * mat[row][i];
                     }
                 }
             } else {

@@ -48,4 +48,8 @@ public class PublicParameters {
         return httpAdapter.getLinearPublicData(substationID, fid);
 
     }
+
+    public BigInteger[] getRsaN(int substationID) {
+        return httpAdapter.getRSASecretPrimes(substationID);
+    }
 }
