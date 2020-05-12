@@ -201,14 +201,24 @@ public class HttpAdapter {
         log.info("Local mode = {}.", local);
     }
 
-    public void updateLocalValues() {
+    public void updateLocalValues(Construction construction) {
         if (!local)
             return;
-        defaultPublicData.getLinearSignatureData();
-        defaultPublicData.getFieldBase();
-        defaultPublicData.getGenerator();
         defaultPublicData.getNumberOfServers();
         defaultPublicData.gettSecure();
+        switch (construction) {
+            case RSA:
+                defaultPublicData.getRSASecretPrimes();
+            case HASH:
+                defaultPublicData.getFieldBase();
+                defaultPublicData.getGenerator();
+                break;
+            case LINEAR:
+                defaultPublicData.getLinearSignatureData();
+                break;
+            case NONCE:
+                break;
+        }
     }
 
     public void changeDefaultValues(Scanner scanner) {

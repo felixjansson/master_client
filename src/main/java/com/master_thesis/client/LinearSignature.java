@@ -32,28 +32,29 @@ public class LinearSignature {
 
     /**
      * This is the share secret function from the Linear Signature construction.
+     *
      * @param int_secret the input is the secret that should be shared.
      * @return An object with data that should be sent.
      */
-    public LinearSignatureData shareSecret(int int_secret) {
+    public LinearSignatureData shareSecret(int int_secret, int fid) {
         // Find the publicly available information used for this computation.
         int substationID = publicParameters.getSubstationID();
-        BigInteger fieldBase = publicParameters.getFieldBase(substationID);
+        PublicData data = publicParameters.getLinearPublicData(substationID, fid);
         BigInteger secret = BigInteger.valueOf(int_secret);
 
         // Get a random nonce value, using a built in java pseudo random number generator (PRNG).
-        BigInteger nonce = BigInteger.valueOf(random.nextLong()).mod(fieldBase);
-        log.info("base: {}, secret: {}, nonce: {}", fieldBase, secret, nonce);
+        BigInteger nonce = BigInteger.valueOf(random.nextLong()).mod(data.getN());
+        log.info("base: {}, secret: {}, nonce: {}", data.getN(), secret, nonce);
 
         // We generate a polynomial of order t. The numerical value of t is retrieved inside the function.
-        Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, fieldBase);
+        Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, data.getN());
 
         // We retrieve the list of servers that will be used in the computation.
         List<Server> servers = publicParameters.getServers();
 
         // A range of 1 - the number of servers are created to make use that the input to the polynomial is unique
         // and that the Lagrange Basis Coefficient will be integer.
-        Set<BigInteger> polynomialInput = IntStream.range(1,servers.size() + 1).mapToObj(BigInteger::valueOf).collect(Collectors.toSet());
+        Set<BigInteger> polynomialInput = IntStream.range(1, servers.size() + 1).mapToObj(BigInteger::valueOf).collect(Collectors.toSet());
         Iterator<BigInteger> iteratorPolyInput = polynomialInput.iterator();
 
         // Here we create a map (dict in python) that relates each server to its share.

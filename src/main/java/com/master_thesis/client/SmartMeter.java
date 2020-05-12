@@ -117,11 +117,11 @@ public class SmartMeter {
     }
 
     private void runTest(int construction) {
-        httpAdapter.updateLocalValues();
         Map<Integer, Construction> constructionMap = Map.of(
                 1, Construction.HASH,
                 2, Construction.RSA,
                 3, Construction.LINEAR);
+        httpAdapter.updateLocalValues(constructionMap.get(construction));
         enabledConstructions.clear();
         enabledConstructions.add(constructionMap.get(construction));
         int runs = httpAdapter.getRunTimes();
@@ -251,7 +251,7 @@ public class SmartMeter {
             log.info("# FID: {} # Sending with {}", fid, Construction.LINEAR);
 
             // Here we perform the ShareSecret function from the Linear Signature Construction.
-            LinearSignatureData data = linearSignature.shareSecret(secret);
+            LinearSignatureData data = linearSignature.shareSecret(secret, fid);
 
             // We add identifiers to allow for multiple computations.
             data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
