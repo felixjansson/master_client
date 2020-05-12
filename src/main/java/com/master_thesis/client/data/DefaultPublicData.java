@@ -1,11 +1,15 @@
 package com.master_thesis.client.data;
 
 import ch.qos.logback.classic.Logger;
+import lombok.SneakyThrows;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -129,7 +133,7 @@ public class DefaultPublicData {
             log.debug("Generating safe prime try: {}, totientRoof: {}, N: {}", ++tries, totientRoof, N);
         } while (!totientRoof.gcd(N).equals(BigInteger.ONE));
         this.linearSignatureData =  new LinearSignatureData.PublicData(N, NRoof,
-                new BigInteger(PRIME_BIT_LENGTH, 16, random),
+                generatePrime(PRIME_BIT_LENGTH),
                 generateRandomBigInteger(NRoof),
                 generateRandomBigInteger(NRoof),
                 generateHVector(1, NRoof), pqRoof);
@@ -141,10 +145,8 @@ public class DefaultPublicData {
 
     private BigInteger[] generateSafePrimePair(int bitLength) {
         BigInteger p, q;
-        do {
-            p = new BigInteger(bitLength/2, 16, random);
-            q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
-        } while (!q.isProbablePrime(16));
+        p = generateSafePrime(bitLength);
+        q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
         return new BigInteger[]{q, p};
     }
 
@@ -222,6 +224,25 @@ public class DefaultPublicData {
         return new BigInteger[] {rsaN, rsaNPrime};
     }
 
+    private BigInteger generateSafePrime(int bits){
+        String[] command = new String[]{"openssl", "prime", "-generate", "-safe", "-bits", Integer.toString(bits / 2)};
+        return invokeOpenSSL(command);
+    }
+
+    private BigInteger generatePrime(int bits){
+        String[] command = new String[]{"openssl", "prime", "-generate", "-bits", Integer.toString(bits / 2)};
+        return invokeOpenSSL(command);
+    }
+
+    @SneakyThrows
+    private BigInteger invokeOpenSSL(String[] command){
+        log.debug("Invoke openSSL with command: {}", Arrays.toString(command));
+        Runtime runtime = Runtime.getRuntime();
+        Process processOpenSSL = runtime.exec(command);
+        processOpenSSL.waitFor();
+        return new BigInteger(new BufferedReader(new InputStreamReader(processOpenSSL.getInputStream())).readLine());
+    }
+
     void generateRSAPrimes(BigInteger fieldBase) {
         // Todo: We believe that if the rsa primes are lower than fieldbase there could be an issue but we do not remember why at the moment.
         fieldBase = BigInteger.ZERO;
@@ -247,9 +268,9 @@ public class DefaultPublicData {
     private BigInteger[] generateSafePrimePair(BigInteger minValue) {
         BigInteger p, q;
         do {
-            p = new BigInteger(RSA_BIT_LENGTH / 2, 16, random);
-            q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
-        } while (!q.isProbablePrime(16) || p.compareTo(minValue) < 1);
+            p = generateSafePrime(RSA_BIT_LENGTH);
+        } while (p.compareTo(minValue) < 1);
+        q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
         return new BigInteger[]{q, p};
     }
 
