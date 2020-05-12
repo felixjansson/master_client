@@ -11,8 +11,6 @@ import com.master_thesis.client.util.PublicParameters;
 import org.ejml.simple.SimpleMatrix;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 import java.math.BigInteger;
@@ -24,17 +22,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Component("rsa")
-@PropertySource("classpath:local.properties")
 public class RSAThreshold {
     private final static SecureRandom random = new SecureRandom();
     private final static BigInteger one = BigInteger.ONE;
     private static final Logger log = (Logger) LoggerFactory.getLogger(RSAThreshold.class);
-
-
-    @Value("${RSA_BIT_LENGTH}")
-    private int KEY_BIT_LENGTH;
-    @Value("${RSA_PRIME_BIT_LENGTH}")
-    private int RSA_PRIME_BIT_LENGTH;
 
     private BigInteger privateKey;
     private BigInteger publicKey;
@@ -161,7 +152,6 @@ public class RSAThreshold {
     public BigInteger hash(BigInteger field, BigInteger input, BigInteger g) {
         return g.modPow(input, field);
     }
-
     /**
      * In this function a Lagrange Basis Coefficient is computed.
      *
@@ -207,11 +197,12 @@ public class RSAThreshold {
                     internalMatrix[row][col] = value;
                 }
             }
-            int rank = rankOfMatrix(internalMatrix);
+            int rank = rankOfMatrix(Arrays.stream(internalMatrix).map(double[]::clone).toArray(double[][]::new));
             isFullRank = rank == Math.min(securityThreshold, m);
             matrixOfClient = new SimpleMatrix(internalMatrix);
             determinant = BigInteger.valueOf(Math.round(matrixOfClient.rows(0, matrixOfClient.numCols()).determinant()));
         }
+        log.debug("Determinant of matrix: {}", determinant);
         return matrixOfClient;
     }
 
@@ -223,8 +214,8 @@ public class RSAThreshold {
         BigInteger rsaNPrimeTwo = rsaNPrime.multiply(BigInteger.TWO);
         do {
             // Generate a public key with gcd=1 with determinant and 2p'q'
-            publicKey = new BigInteger(KEY_BIT_LENGTH, 16, random);
-        } while ((!determinant.gcd(publicKey).equals(one) || !rsaNPrimeTwo.gcd(publicKey).equals(BigInteger.ONE)) || publicKey.bitLength() != KEY_BIT_LENGTH);
+            publicKey = new BigInteger(rsaNPrimeTwo.bitLength(), 16, random);
+        } while ((!determinant.gcd(publicKey).equals(one) || !rsaNPrimeTwo.gcd(publicKey).equals(BigInteger.ONE)));
         privateKey = publicKey.modInverse(rsaNPrimeTwo);
     }
 

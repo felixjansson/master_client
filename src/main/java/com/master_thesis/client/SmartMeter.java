@@ -31,7 +31,7 @@ public class SmartMeter {
     private Scanner scanner;
     private int substationID;
     private ApplicationArguments args;
-    private Collection<Construction> enabledConstructions = Stream.of(Construction.HASH, Construction.LINEAR).collect(Collectors.toSet());
+    private Collection<Construction> enabledConstructions = Stream.of(Construction.RSA).collect(Collectors.toSet());
 
 
     @Autowired
@@ -56,7 +56,7 @@ public class SmartMeter {
     }
 
     @Autowired
-    public void run() throws InterruptedException {
+    public void run() {
 
         if (args.containsOption("test")) {
             runTest();
@@ -105,8 +105,9 @@ public class SmartMeter {
                 default:
                     if ("123".contains(input)) {
                         runTest(Integer.parseInt(input));
+                    } else {
+                        log.info("unknown command: [{}]", input);
                     }
-                    log.info("unknown command: [{}]", input);
             }
         }
     }
@@ -127,11 +128,11 @@ public class SmartMeter {
         double percentageInterval = 0.02d;
         int progressStep = (int) Math.round((double)runs * percentageInterval);
         for (int i = 0; i < runs; i++) {
-//            Give some graphical feedback that it's alive! :)))
-            if (i % progressStep == 1){
-                int percentage = Math.round(((float) i / (float) runs) * 100f);
-                System.out.println("Progress: " + percentage + "%");
-            }
+////            Give some graphical feedback that it's alive! :)))
+//            if (i % progressStep == 1){
+//                int percentage = Math.round(((float) i / (float) runs) * 100f);
+//                System.out.println("Progress: " + percentage + "%");
+//            }
             readAndSendShare();
         }
         System.out.println("TEST DONE!\n");
@@ -153,7 +154,6 @@ public class SmartMeter {
                 sb.add(Integer.toString(dpd.getFieldBase_bits()));
                 sb.add(Integer.toString(dpd.getGenerator_bits()));
                 sb.add(Integer.toString(dpd.getRSA_BIT_LENGTH()));
-                sb.add(Integer.toString(dpd.getRSA_PRIME_BIT_LENGTH()));
                 break;
             case LINEAR:
                 sb.add(Integer.toString(dpd.getPRIME_BIT_LENGTH()));
@@ -224,6 +224,7 @@ public class SmartMeter {
 
         if (enabledConstructions.contains(Construction.RSA)) {
             log.info("# FID: {} # Sending with {}", fid, Construction.RSA);
+            httpAdapter.getRSASecretPrimes(substationID);
 
             // Here we perform the ShareSecret function from the Threshold Signature Construction.
             RSAThresholdData data = rsaThreshold.shareSecret(secret);
@@ -289,9 +290,7 @@ public class SmartMeter {
         JsonNode clients = httpAdapter.listClients(substationID);
         JsonNode clientsAtSubstation = clients.get(Integer.toString(substationID));
         StringBuilder sb = new StringBuilder("Clients: ");
-        clientsAtSubstation.elements().forEachRemaining(node -> {
-            sb.append(node.get("clientID")).append(", ");
-        });
+        clientsAtSubstation.elements().forEachRemaining(node -> sb.append(node.get("clientID")).append(", "));
         return sb.toString();
     }
 

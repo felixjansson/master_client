@@ -40,8 +40,6 @@ public class DefaultPublicData {
 
     @Value("${RSA_BIT_LENGTH}")
     private int RSA_BIT_LENGTH;
-    @Value("${RSA_PRIME_BIT_LENGTH}")
-    private int RSA_PRIME_BIT_LENGTH;
 
 
     private BigInteger fieldBase;
@@ -212,10 +210,6 @@ public class DefaultPublicData {
         return PRIME_BIT_LENGTH_PRIME;
     }
 
-    public int getRSA_PRIME_BIT_LENGTH() {
-        return RSA_PRIME_BIT_LENGTH;
-    }
-
     public int getRSA_BIT_LENGTH() {
         return RSA_BIT_LENGTH;
     }
@@ -227,8 +221,10 @@ public class DefaultPublicData {
     }
 
     void generateRSAPrimes(BigInteger fieldBase) {
-        if (fieldBase.compareTo(BigInteger.TWO.pow(RSA_PRIME_BIT_LENGTH)) >= 0)
-            throw new RuntimeException("FieldBase bit length is higher than RSA primes. RSA must be larger.");
+        // Todo: We believe that if the rsa primes are lower than fieldbase there could be an issue but we do not remember why at the moment.
+        fieldBase = BigInteger.ZERO;
+//        if (fieldBase.bitLength() > RSA_BIT_LENGTH / 2)
+//            throw new RuntimeException("FieldBase bit length is higher than RSA primes. RSA must be two times larger.");
         BigInteger[] pPair = generateConstrainedSafePrimePair(fieldBase, new BigInteger[]{});
         BigInteger[] qPair = generateConstrainedSafePrimePair(fieldBase, pPair);
         rsaNPrime = pPair[0].multiply(qPair[0]);
@@ -249,7 +245,7 @@ public class DefaultPublicData {
     private BigInteger[] generateSafePrimePair(BigInteger minValue) {
         BigInteger p, q;
         do {
-            p = new BigInteger(RSA_PRIME_BIT_LENGTH, 16, random);
+            p = new BigInteger(RSA_BIT_LENGTH / 2, 16, random);
             q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
         } while (!q.isProbablePrime(16) || p.compareTo(minValue) < 1);
         return new BigInteger[]{q, p};

@@ -178,12 +178,11 @@ public class HttpAdapter {
         if (local)
             return defaultPublicData.getRSASecretPrimes();
 
-        URI uri = URI.create("http://localhost:4000/api/" + Construction.RSA.getEndpoint() + "/client-rsa-n/" + substationID);
+        URI uri = URI.create("http://localhost:4000/api/setup/" + Construction.RSA.getEndpoint() + "/client/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         log.debug("RSA N for client: {}", response.body());
-        return objectMapper.readValue(response.body(), new TypeReference<>() {
-        });
+        return objectMapper.readValue(response.body(), BigInteger[].class);
     }
 
     @SneakyThrows
@@ -203,12 +202,13 @@ public class HttpAdapter {
     }
 
     public void updateLocalValues() {
+        if (!local)
+            return;
         defaultPublicData.getLinearSignatureData();
         defaultPublicData.getFieldBase();
         defaultPublicData.getGenerator();
         defaultPublicData.getNumberOfServers();
         defaultPublicData.gettSecure();
-        defaultPublicData.getRSASecretPrimes();
     }
 
     public void changeDefaultValues(Scanner scanner) {
