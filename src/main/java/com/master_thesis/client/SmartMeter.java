@@ -142,6 +142,7 @@ public class SmartMeter {
     private void printCSVData(Construction construction) {
         StringJoiner sb = new StringJoiner(",");
         DefaultPublicData dpd = httpAdapter.getDefaultPublicData();
+        sb.add(dpd.getUser());
         sb.add(Integer.toString(dpd.getRunTimes()));
         sb.add(Integer.toString(dpd.gettSecure()));
         sb.add(Integer.toString(dpd.getNumberOfServers()));

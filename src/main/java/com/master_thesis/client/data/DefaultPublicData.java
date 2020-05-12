@@ -46,6 +46,8 @@ public class DefaultPublicData {
     private BigInteger generator;
     private BigInteger rsaNPrime;
     private BigInteger rsaN;
+    @Value("${user-tag}")
+    private String user;
 
     public int getRunTimes() {
         return runTimes;
@@ -251,4 +253,7 @@ public class DefaultPublicData {
         return new BigInteger[]{q, p};
     }
 
+    public String getUser() {
+        return user;
+    }
 }
