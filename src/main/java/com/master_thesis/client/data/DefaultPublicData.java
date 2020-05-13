@@ -84,7 +84,7 @@ public class DefaultPublicData {
                 generator = new BigInteger(generator_bits, 16, random);
             } while (generator.bitLength() != generator_bits);
         }
-        return fieldBase;
+        return generator;
     }
 
     public void setGenerator(BigInteger generator) {
