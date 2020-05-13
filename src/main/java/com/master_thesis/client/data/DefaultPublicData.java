@@ -67,9 +67,7 @@ public class DefaultPublicData {
 
     public BigInteger getFieldBase() {
         if (fieldBase == null) {
-            do {
-                fieldBase = new BigInteger(fieldBase_bits, 16, random);
-            } while (fieldBase.bitLength() != fieldBase_bits);
+            fieldBase = generatePrime(fieldBase_bits);
         }
         return fieldBase;
     }
@@ -80,9 +78,7 @@ public class DefaultPublicData {
 
     public BigInteger getGenerator() {
         if (generator == null) {
-            do {
-                generator = new BigInteger(generator_bits, 16, random);
-            } while (generator.bitLength() != generator_bits);
+            generator = generatePrime(generator_bits);
         }
         return generator;
     }
@@ -226,12 +222,18 @@ public class DefaultPublicData {
 
     private BigInteger generateSafePrime(int bits){
         String[] command = new String[]{"openssl", "prime", "-generate", "-safe", "-bits", Integer.toString(bits / 2)};
-        return invokeOpenSSL(command);
+        BigInteger safePrime = invokeOpenSSL(command);
+        if (safePrime.bitLength() != bits/2)
+            throw new RuntimeException("Prime has " + safePrime.bitLength() + " bits but expected " + bits/2 + " bits.");
+        return safePrime;
     }
 
     private BigInteger generatePrime(int bits){
         String[] command = new String[]{"openssl", "prime", "-generate", "-bits", Integer.toString(bits / 2)};
-        return invokeOpenSSL(command);
+        BigInteger prime = invokeOpenSSL(command);
+        if (prime.bitLength() != bits/2)
+            throw new RuntimeException("Prime has " + prime.bitLength() + " bits but expected " + bits/2 + " bits.");
+        return prime;
     }
 
     @SneakyThrows
