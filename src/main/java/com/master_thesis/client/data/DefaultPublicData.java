@@ -66,7 +66,7 @@ public class DefaultPublicData {
 
     public BigInteger getFieldBase() {
         if (fieldBase == null) {
-            fieldBase = generatePrime(fieldBase_bits*2);
+            fieldBase = generatePrime(fieldBase_bits);
         }
         return fieldBase;
     }
@@ -77,7 +77,7 @@ public class DefaultPublicData {
 
     public BigInteger getGenerator() {
         if (generator == null) {
-            generator = generatePrime(generator_bits*2);
+            generator = generatePrime(generator_bits);
         }
         return generator;
     }
@@ -130,7 +130,7 @@ public class DefaultPublicData {
             log.debug("Generating safe prime try: {}, totientRoof: {}, N: {}", ++tries, totientRoof, N);
         } while (!totientRoof.gcd(N).equals(BigInteger.ONE));
         this.linearSignatureData =  new LinearSignatureData.PublicData(N, NRoof,
-                generatePrime(PRIME_BIT_LENGTH),
+                generatePrimeUpTo(PRIME_BIT_LENGTH),
                 generateRandomBigInteger(NRoof),
                 generateRandomBigInteger(NRoof),
                 generateHVector(1, NRoof), pqRoof);
@@ -238,24 +238,36 @@ public class DefaultPublicData {
         return new BigInteger[] {rsaN, rsaNPrime};
     }
 
-    private BigInteger generateSafePrime(int bits){
-        String[] command = new String[]{"openssl", "prime", "-generate", "-safe", "-bits", Integer.toString(bits / 2)};
+    private BigInteger generateSafePrime(int bits) {
+        String[] command = new String[]{"openssl", "prime", "-generate", "-safe", "-bits", Integer.toString(bits)};
         BigInteger safePrime = invokeOpenSSL(command);
-        if (safePrime.bitLength() != bits/2)
-            throw new RuntimeException("Prime has " + safePrime.bitLength() + " bits but expected " + bits/2 + " bits.");
+        if (safePrime.bitLength() != bits)
+            throw new RuntimeException("Prime has " + safePrime.bitLength() + " bits but expected " + bits + " bits.");
         return safePrime;
     }
 
-    private BigInteger generatePrime(int bits){
-        String[] command = new String[]{"openssl", "prime", "-generate", "-bits", Integer.toString(bits / 2)};
+    /**
+     * @param bits at most this many bits will be used in the prime.
+     * @return a prime of at most #bits size.
+     */
+    private BigInteger generatePrimeUpTo(int bits) {
+        return new BigInteger(bits, 16, random);
+    }
+
+    /**
+     * @param bits the exact number of bits in the requested prime.
+     * @return a prime of exactly #bits.
+     */
+    private BigInteger generatePrime(int bits) {
+        String[] command = new String[]{"openssl", "prime", "-generate", "-bits", Integer.toString(bits)};
         BigInteger prime = invokeOpenSSL(command);
-        if (prime.bitLength() != bits/2)
-            throw new RuntimeException("Prime has " + prime.bitLength() + " bits but expected " + bits/2 + " bits.");
+        if (prime.bitLength() != bits)
+            throw new RuntimeException("Prime has " + prime.bitLength() + " bits but expected " + bits + " bits.");
         return prime;
     }
 
     @SneakyThrows
-    private BigInteger invokeOpenSSL(String[] command){
+    private BigInteger invokeOpenSSL(String[] command) {
         log.debug("Invoke openSSL with command: {}", Arrays.toString(command));
         Runtime runtime = Runtime.getRuntime();
         Process processOpenSSL = runtime.exec(command);
