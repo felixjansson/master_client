@@ -67,7 +67,7 @@ public class DefaultPublicData {
 
     public BigInteger getFieldBase() {
         if (fieldBase == null) {
-            fieldBase = generatePrime(fieldBase_bits);
+            fieldBase = generatePrime(fieldBase_bits*2);
         }
         return fieldBase;
     }
@@ -78,7 +78,7 @@ public class DefaultPublicData {
 
     public BigInteger getGenerator() {
         if (generator == null) {
-            generator = generatePrime(generator_bits);
+            generator = generatePrime(generator_bits*2);
         }
         return generator;
     }
