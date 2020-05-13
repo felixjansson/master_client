@@ -67,7 +67,7 @@ public class SmartMeter {
         boolean running = true;
         while (running) {
 
-            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. \n          [d]elete all. [t]oggle construction. [s]end shares. \n          [local] toggles if servers are used. [default] to change default values\n          [run many] to run many.\n", clientID);
+            System.out.printf("Client %s: [q]uit. [l]ist clients. [r]egister. \n          [d]elete all. [t]oggle construction. [s]end shares. \n          [local] toggles if servers are used. [default] to change default values\n          [test] to run locally with result output. [run many] to run many.\n          [1][2][3] to run a specific construction\n", clientID);
 
             String input = scanner.nextLine();
             log.debug("input: {}", input);
@@ -100,7 +100,7 @@ public class SmartMeter {
                     httpAdapter.changeDefaultValues(scanner);
                     break;
                 case "test":
-                    runTest();
+                    httpAdapter.toggleTester();
                     break;
                 default:
                     if ("123".contains(input)) {
@@ -125,14 +125,7 @@ public class SmartMeter {
         enabledConstructions.clear();
         enabledConstructions.add(constructionMap.get(construction));
         int runs = httpAdapter.getRunTimes();
-        double percentageInterval = 0.02d;
-        int progressStep = (int) Math.round((double)runs * percentageInterval);
         for (int i = 0; i < runs; i++) {
-////            Give some graphical feedback that it's alive! :)))
-//            if (i % progressStep == 1){
-//                int percentage = Math.round(((float) i / (float) runs) * 100f);
-//                System.out.println("Progress: " + percentage + "%");
-//            }
             readAndSendShare();
         }
         System.out.println("TEST DONE!\n");

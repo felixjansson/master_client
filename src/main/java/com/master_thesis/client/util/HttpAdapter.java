@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.master_thesis.client.SanityCheck.Tester;
 import com.master_thesis.client.data.*;
 import lombok.SneakyThrows;
 import org.slf4j.LoggerFactory;
@@ -26,11 +27,14 @@ public class HttpAdapter {
     private ObjectMapper objectMapper;
     private static final Logger log = (Logger) LoggerFactory.getLogger(HttpAdapter.class);
     private boolean local = false;
+    private Tester tester;
 
     private DefaultPublicData defaultPublicData;
+    private boolean useTester;
 
     @Autowired
-    public HttpAdapter(DefaultPublicData defaultPublicData) {
+    public HttpAdapter(Tester tester, DefaultPublicData defaultPublicData) {
+        this.tester = tester;
         this.objectMapper = new ObjectMapper();
         this.defaultPublicData = defaultPublicData;
     }
@@ -56,7 +60,7 @@ public class HttpAdapter {
 
         for (int i = 0; i < defaultPublicData.getNumberOfServers(); i++) {
             Server tmpServer = new Server();
-            tmpServer.setUri(URI.create("localhost:200" + i));
+            tmpServer.setUri(URI.create("http://localhost:200" + i + "/"));
             tmpServer.setServerID(i);
             serverList.add(tmpServer);
         }
@@ -67,7 +71,7 @@ public class HttpAdapter {
     public ClientStartupData registerClient() {
         URI uri = URI.create("http://localhost:4000/api/client/register");
         HttpRequest request = HttpRequest.newBuilder(uri).POST(HttpRequest.BodyPublishers.noBody()).build();
-        HttpResponse<String> response = null;
+        HttpResponse<String> response;
         try {
             response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
             log.info(response.body());
@@ -138,8 +142,12 @@ public class HttpAdapter {
 
     @SneakyThrows
     private void postRequest(URI uri, Object body) {
-        if (local)
+        if (local) {
+            if (useTester) {
+                tester.clientPost(body, defaultPublicData);
+            }
             return;
+        }
         boolean sending = true;
         String jsonObject = objectMapper.writeValueAsString(body);
         int tries = 10;
@@ -204,8 +212,6 @@ public class HttpAdapter {
     public void updateLocalValues(Construction construction) {
         if (!local)
             return;
-        defaultPublicData.getNumberOfServers();
-        defaultPublicData.gettSecure();
         switch (construction) {
             case RSA:
                 defaultPublicData.getRSASecretPrimes();
@@ -235,5 +241,12 @@ public class HttpAdapter {
 
     public DefaultPublicData getDefaultPublicData() {
         return defaultPublicData;
+    }
+
+    public void toggleTester() {
+        useTester = !useTester;
+        if (useTester)
+            local = true;
+        log.info("Using tester = {}, local = {}", useTester, local);
     }
 }

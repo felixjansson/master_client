@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -97,15 +96,17 @@ public class DefaultPublicData {
 
     @Override
     public String toString() {
-        return "Default values [" +
-                " Servers: " + numberOfServers +
-                ", FieldBase: " + fieldBase +
-                ", Generator: " + generator +
-                ", TSecure: " + tSecure +
-                ", Prime bits: " + PRIME_BIT_LENGTH +
-                " ]";
+        return "DefaultPublicData{" +
+                "servers=" + numberOfServers +
+                ", fieldBase bits=" + fieldBase_bits +
+                ", generator bits=" + generator_bits +
+                ", tSecure=" + tSecure +
+                ", k bits=" + PRIME_BIT_LENGTH +
+                ", k' bits=" + PRIME_BIT_LENGTH_PRIME +
+                ", runTimes=" + runTimes +
+                ", rsa bits=" + RSA_BIT_LENGTH +
+                '}';
     }
-
 
     private BigInteger[] generateHVector(int numberOfClients, BigInteger nRoof) {
         BigInteger[] h = new BigInteger[numberOfClients];
@@ -146,8 +147,9 @@ public class DefaultPublicData {
         return new BigInteger[]{q, p};
     }
 
+
     public void changeDefaultValues(Scanner scanner) {
-        Set<String> settings = Set.of("fieldbase", "tsecure", "generator", "servers", "primebits");
+        Set<String> settings = Set.of("servers", "fieldbasebits", "generatorbits", "tsecure", "kbits", "k'bits", "runtimes", "rsabits", "fb", "gb");
         String input;
         do {
             do {
@@ -159,23 +161,39 @@ public class DefaultPublicData {
 
             System.out.print("New value? ");
             switch (input) {
-                case "fieldbase":
-                    this.setFieldBase(scanner.nextBigInteger());
-                    break;
                 case "tsecure":
                     this.settSecure(scanner.nextInt());
-                    break;
-                case "generator":
-                    this.setGenerator(scanner.nextBigInteger());
                     break;
                 case "servers":
                     this.setNumberOfServers(scanner.nextInt());
                     break;
-                case "primebits":
-                    int bits = scanner.nextInt();
-                    PRIME_BIT_LENGTH = bits;
-                    PRIME_BIT_LENGTH_PRIME = bits;
+                case "kbits":
+                    PRIME_BIT_LENGTH = scanner.nextInt();
                     generateLinearSignatureData();
+                    break;
+                case "k'bits":
+                    PRIME_BIT_LENGTH_PRIME = scanner.nextInt();
+                    generateLinearSignatureData();
+                    break;
+                case "gb":
+                case "generatorbits":
+                    generator_bits = scanner.nextInt();
+                    generator = null;
+                    getGenerator();
+                    break;
+                case "fb":
+                case "fieldbasebits":
+                    fieldBase_bits = scanner.nextInt();
+                    fieldBase = null;
+                    getFieldBase();
+                    break;
+                case "runtimes":
+                    runTimes = scanner.nextInt();
+                    break;
+                case "rsabits":
+                    RSA_BIT_LENGTH = scanner.nextInt();
+                    rsaNPrime = null;
+                    getRSASecretPrimes();
                     break;
             }
             scanner.nextLine();
