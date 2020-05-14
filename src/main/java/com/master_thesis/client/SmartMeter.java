@@ -137,11 +137,14 @@ public class SmartMeter {
         for (int i = 0; i < checkpoint; i++) {
             readAndSendShare();
         }
-        System.err.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " + "5% done in " + timer + "ms. Max total time: "
-                + timer * 20 + "ms.");
+        if (timer > 15000) {
+            System.err.print("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " + "5% done in " + timer/1000 + "s. Max total time: "
+                    + timer * 20 / 1000 + "s. ==> ");
+        }
         for (int i = checkpoint; i < runs; i++) {
             readAndSendShare();
         }
+        System.err.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "]" + " Done in " + timer + "ms.");
         printCSVData(constructionMap.get(construction));
     }
 
@@ -149,6 +152,7 @@ public class SmartMeter {
         StringJoiner sb = new StringJoiner(",");
         DefaultPublicData dpd = httpAdapter.getDefaultPublicData();
         sb.add(dpd.getUser());
+        sb.add(construction.toString());
         sb.add(Integer.toString(dpd.getRunTimes()));
         sb.add(Integer.toString(dpd.getWarmupRuns()));
         sb.add(Integer.toString(dpd.gettSecure()));

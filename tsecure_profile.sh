@@ -14,9 +14,11 @@ declare OUTPUT_FILE="sample.csv"
 
 for server in "${SERVERS[@]}"; do
   for ((TSECURE = 15; TSECURE < $server; TSECURE += 20)); do
+    now=$(date +%H:%M:%S)
+    echo "["$now"] NEW TEST ROUND: t_secure="$TSECURE" and serves="$server""
     for run in $(seq 1 $RUNS); do
       now=$(date +%H:%M:%S)
-      echo "["$now"] Test $run/$RUNS with t_secure="$TSECURE" and serves="$server""
+      echo "["$now"] Test $run/$RUNS"
       "$JAVA_11" -jar "$JAR_NAME" --test --numberOfServers="$server" --t_secure="$TSECURE" "$FLAG_CONSTRUCTION" "$FLAG_FIELD_BITS" "$FLAG_GENERATOR_BITS" | grep "F,\|S," >>"$OUTPUT_FILE"
     done
   done
