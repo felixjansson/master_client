@@ -8,8 +8,8 @@ declare CONSTRUCTION=1
 declare WARMUP_RUNS=2500
 declare RUNS=10000
 declare JAVA_SIMON="/cygdrive/c/Users/SS170679/AppData/Local/JetBrains/IntelliJ IDEA 2019.3.3/jbr/bin/java.exe"
-declare JAVA_FELIX=""
-declare JAVA_PATH=java
+declare JAVA_F="/cygdrive/c/Users/FJ865990/AppData/Local/JetBrains/IntelliJ IDEA 2020.1.1/jbr/bin/java.exe"
+declare JAVA_PATH="$JAVA_F"
 
 # This has to be set before running
 declare JAR_NAME="./build/libs/client-0.0.1-SNAPSHOT-all.jar"
