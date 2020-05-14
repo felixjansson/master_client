@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Logger;
 import lombok.SneakyThrows;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
@@ -51,6 +52,8 @@ public class DefaultPublicData {
     private BigInteger rsaN;
     @Value("${user-tag}")
     private String user;
+    @Value("${warmup_runs}")
+    private int warmupRuns;
 
     public int getRunTimes() {
         return runTimes;
@@ -105,6 +108,7 @@ public class DefaultPublicData {
                 ", k' bits=" + PRIME_BIT_LENGTH_PRIME +
                 ", runTimes=" + runTimes +
                 ", rsa bits=" + RSA_BIT_LENGTH +
+                ", skip runs=" + warmupRuns +
                 '}';
     }
 
@@ -149,7 +153,7 @@ public class DefaultPublicData {
 
 
     public void changeDefaultValues(Scanner scanner) {
-        Set<String> settings = Set.of("servers", "fieldbasebits", "generatorbits", "tsecure", "kbits", "k'bits", "runtimes", "rsabits", "fb", "gb");
+        Set<String> settings = Set.of("servers", "fieldbasebits", "generatorbits", "tsecure", "kbits", "k'bits", "runtimes", "rsabits", "skipruns", "fb", "gb");
         String input;
         do {
             do {
@@ -194,6 +198,9 @@ public class DefaultPublicData {
                     RSA_BIT_LENGTH = scanner.nextInt();
                     rsaNPrime = null;
                     getRSASecretPrimes();
+                    break;
+                case "skipruns":
+                    warmupRuns = scanner.nextInt();
                     break;
             }
             scanner.nextLine();
@@ -308,5 +315,53 @@ public class DefaultPublicData {
 
     public String getUser() {
         return user;
+    }
+
+    public void updateValues(ApplicationArguments args) {
+        args.getOptionNames().forEach(option -> {
+            if (args.getOptionValues(option).size() == 0)
+                return;
+            String value = args.getOptionValues(option).get(0);
+            switch (option) {
+                case "user-tag":
+                    user = value;
+                    break;
+                case "runs":
+                    runTimes = Integer.parseInt(value);
+                    break;
+                case "construction":
+                    construction = Integer.parseInt(value);
+                    break;
+                case "t_secure":
+                    tSecure = Integer.parseInt(value);
+                    break;
+                case "numberOfServers":
+                    numberOfServers = Integer.parseInt(value);
+                    break;
+                case "k":
+                    PRIME_BIT_LENGTH = Integer.parseInt(value);
+                    break;
+                case "k_prime":
+                    PRIME_BIT_LENGTH_PRIME = Integer.parseInt(value);
+                    break;
+                case "fieldBase_bits":
+                    fieldBase_bits = Integer.parseInt(value);
+                    break;
+                case "generator_bits":
+                    generator_bits = Integer.parseInt(value);
+                    break;
+                case "RSA_BIT_LENGTH":
+                    RSA_BIT_LENGTH = Integer.parseInt(value);
+                    break;
+                case "warmup_runs":
+                    warmupRuns = Integer.parseInt(value);
+                    break;
+            }
+        });
+
+    }
+
+    public int getWarmupRuns() {
+        return warmupRuns;
     }
 }

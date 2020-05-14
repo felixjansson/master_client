@@ -1,7 +1,9 @@
+import com.github.jengelman.gradle.plugins.shadow.transformers.*
 plugins {
     id 'org.springframework.boot' version '2.2.4.RELEASE'
     id 'io.spring.dependency-management' version '1.0.9.RELEASE'
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
 }
 
 group = 'com.master_thesis'
@@ -17,6 +19,9 @@ configurations {
         extendsFrom annotationProcessor
     }
 }
+
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
 
 repositories {
     mavenCentral()
@@ -38,4 +43,26 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+jar {
+    enabled=true
+    manifest {
+        attributes 'Main-Class': 'com.master_thesis.client.SmartMeter'
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+shadowJar {
+
+    // Required for Spring
+    mergeServiceFiles()
+    append 'META-INF/spring.handlers'
+    append 'META-INF/spring.schemas'
+    append 'META-INF/spring.tooling'
+    transform(PropertiesFileTransformer) {
+        paths = ['META-INF/spring.factories' ]
+        mergeStrategy = "append"
+    }
+
 }

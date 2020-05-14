@@ -32,6 +32,7 @@ public class SmartMeter {
     private int substationID;
     private ApplicationArguments args;
     private Collection<Construction> enabledConstructions = Stream.of(Construction.RSA).collect(Collectors.toSet());
+    private long timer;
 
 
     @Autowired
@@ -62,6 +63,8 @@ public class SmartMeter {
             runTest();
             return;
         }
+
+        httpAdapter.getDefaultPublicData().updateValues(args);
 
         scanner = new Scanner(System.in);
         boolean running = true;
@@ -125,10 +128,20 @@ public class SmartMeter {
         enabledConstructions.clear();
         enabledConstructions.add(constructionMap.get(construction));
         int runs = httpAdapter.getRunTimes();
-        for (int i = 0; i < runs; i++) {
+        int checkpoint = runs / 20;
+        int skipRuns = httpAdapter.getDefaultPublicData().getWarmupRuns();
+        for (int i = 0; i < skipRuns; i++) {
             readAndSendShare();
         }
-        System.out.println("TEST DONE!\n");
+        timer = 0;
+        for (int i = 0; i < checkpoint; i++) {
+            readAndSendShare();
+        }
+        System.err.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " + "5% done in " + timer + "ms. Max total time: "
+                + timer * 20 + "ms.");
+        for (int i = checkpoint; i < runs; i++) {
+            readAndSendShare();
+        }
         printCSVData(constructionMap.get(construction));
     }
 
@@ -137,6 +150,7 @@ public class SmartMeter {
         DefaultPublicData dpd = httpAdapter.getDefaultPublicData();
         sb.add(dpd.getUser());
         sb.add(Integer.toString(dpd.getRunTimes()));
+        sb.add(Integer.toString(dpd.getWarmupRuns()));
         sb.add(Integer.toString(dpd.gettSecure()));
         sb.add(Integer.toString(dpd.getNumberOfServers()));
         switch (construction) {
@@ -157,7 +171,7 @@ public class SmartMeter {
                 break;
         }
         sb.add(new SimpleDateFormat("MMdd-HHmm").format(new Date()));
-        System.out.println("CSV print for " + construction);
+        sb.add(Long.toString(timer));
         System.out.println(sb.toString());
     }
 
@@ -197,8 +211,10 @@ public class SmartMeter {
             log.info("# FID: {} # Sending with {}", fid, Construction.HASH);
 
             // Here we perform the ShareSecret function from the Homomorphic Hash Construction.
+            long start = System.currentTimeMillis();
             HomomorphicHashData data = homomorphicHash.shareSecret(secret);
-
+            long end = System.currentTimeMillis();
+            timer += end - start;
             // We add identifiers to allow for multiple computations.
             data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
 
@@ -221,7 +237,10 @@ public class SmartMeter {
             httpAdapter.getRSASecretPrimes(substationID);
 
             // Here we perform the ShareSecret function from the Threshold Signature Construction.
+            long start = System.currentTimeMillis();
             RSAThresholdData data = rsaThreshold.shareSecret(secret);
+            long end = System.currentTimeMillis();
+            timer += end - start;
 
             // We add identifiers to allow for multiple computations.
             data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
@@ -244,15 +263,19 @@ public class SmartMeter {
             log.info("# FID: {} # Sending with {}", fid, Construction.LINEAR);
 
             // Here we perform the ShareSecret function from the Linear Signature Construction.
+            long start = System.currentTimeMillis();
             LinearSignatureData data = linearSignature.shareSecret(secret, fid);
-
+            long end = System.currentTimeMillis();
+            timer += end - start;
             // We add identifiers to allow for multiple computations.
             data.setFid(fid).setClientID(clientID).setSubstationID(substationID);
 
             // Using the result of the share secret function we compute the partial proof function from Linear Signature Construction
             // The data variable is modified in the function and "replaced" when the partial proof function is completed.
+            start = System.currentTimeMillis();
             data = linearSignature.partialProof(data, secret);
-
+            end = System.currentTimeMillis();
+            timer += end - start;
             // We retrieve all shares going to the servers and send them.
             Map<URI, LinearSignatureData.ServerData> serverDataMap = data.getServerData();
             serverDataMap.forEach(httpAdapter::sendServerShare);
