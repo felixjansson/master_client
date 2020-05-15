@@ -15,7 +15,7 @@ declare JAVA_PATH="$JAVA_F"
 
 
 declare JAR_NAME="./build/libs/client-0.0.1-SNAPSHOT-all.jar"
-now=$(date +%H:%M:%S)
+now=$(date +%m%d-%H:%M:%S)
 declare OUTPUT_FILE=""$now"_linear_k_kprime_sample.csv"
 
 # Print the column labels
