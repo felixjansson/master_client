@@ -1,4 +1,3 @@
-
 #! /usr/bin/bash
 
 declare -a K_BITS_ARR=(16 32 64 128 256 512)
@@ -11,7 +10,7 @@ declare WARMUP_RUNS=0
 declare RUNS=10
 declare JAVA_S="/cygdrive/c/Users/SS170679/AppData/Local/JetBrains/IntelliJ IDEA 2019.3.3/jbr/bin/java.exe"
 declare JAVA_F="/cygdrive/c/Users/FJ865990/AppData/Local/JetBrains/IntelliJ IDEA 2020.1.1/jbr/bin/java.exe"
-declare JAVA_PATH="$JAVA_F"
+declare JAVA_PATH=java
 
 
 declare JAR_NAME="./build/libs/client-0.0.1-SNAPSHOT-all.jar"
@@ -28,7 +27,7 @@ for run in $(seq 1 $REPEAT_RUNS); do
   for k_bits in "${K_BITS_ARR[@]}"; do
     for k_prime_bits in "${K_PRIME_BITS_ARR[@]}"; do
       now=$(date +%H:%M:%S)
-      echo "["$now"] NEW TEST ROUND: k_bits="$k_bits" and k_prime_bits="$k_prime_bits""    
+      echo "["$now"] NEW TEST ROUND: k_bits="$k_bits" and k_prime_bits="$k_prime_bits""
       # Execute the test
       "$JAVA_PATH" -jar "$JAR_NAME" --local \
         --t_secure="$TSECURE" \
@@ -41,5 +40,5 @@ for run in $(seq 1 $REPEAT_RUNS); do
         < input_linear_false_search \
         | grep "true,\|false," >> "$OUTPUT_FILE"
         done
-    done 
+    done
 done
