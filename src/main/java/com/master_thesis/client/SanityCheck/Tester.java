@@ -105,7 +105,8 @@ public class Tester {
             lock.lock();
             try {
                 boolean valid = homomorphicHashVerifier.verify(finalEval, hashFinalProof, homomorphicTaus);
-                log.info("Valid = {}, Result = {}, Proof = {}", valid, finalEval, hashFinalProof);
+//                log.info("Valid = {}, Result = {}, Proof = {}", valid, finalEval, hashFinalProof);
+                System.out.println(valid + ", " + defaultPublicData.toCSVString());
                 reset();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -138,7 +139,7 @@ public class Tester {
             lock.lock();
             try {
                 boolean valid = linearSignatureVerifier.verify(finalEval, linearFinalProof, defaultPublicData.getLinearSignatureData(), rn);
-                log.info("Valid = {}, Result = {}, Proof = {}", valid, finalEval, linearFinalProof);
+                System.out.println(valid + "," + defaultPublicData.toCSVString());
                 reset();
             } catch (Exception e) {
                 e.printStackTrace();

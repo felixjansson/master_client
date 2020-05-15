@@ -99,8 +99,7 @@ public class DefaultPublicData {
 
     @Override
     public String toString() {
-        return "DefaultPublicData{" +
-                "servers=" + numberOfServers +
+        return "servers=" + numberOfServers +
                 ", fieldBase bits=" + fieldBase_bits +
                 ", generator bits=" + generator_bits +
                 ", tSecure=" + tSecure +
@@ -108,8 +107,20 @@ public class DefaultPublicData {
                 ", k' bits=" + PRIME_BIT_LENGTH_PRIME +
                 ", runTimes=" + runTimes +
                 ", rsa bits=" + RSA_BIT_LENGTH +
-                ", skip runs=" + warmupRuns +
-                '}';
+                ", skip runs=" + warmupRuns;
+    }
+
+    public String toCSVString() {
+        return  construction +
+                "," + numberOfServers +
+                "," + fieldBase_bits +
+                "," + generator_bits +
+                "," + tSecure +
+                "," + PRIME_BIT_LENGTH +
+                "," + PRIME_BIT_LENGTH_PRIME +
+                "," + runTimes +
+                "," + RSA_BIT_LENGTH +
+                "," + warmupRuns;
     }
 
     private BigInteger[] generateHVector(int numberOfClients, BigInteger nRoof) {
