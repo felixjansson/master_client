@@ -15,6 +15,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @PropertySource("classpath:local.properties")
@@ -289,7 +290,6 @@ public class DefaultPublicData {
         log.debug("Invoke openSSL with command: {}", Arrays.toString(command));
         Runtime runtime = Runtime.getRuntime();
         Process processOpenSSL = runtime.exec(command);
-        processOpenSSL.waitFor();
         return new BigInteger(new BufferedReader(new InputStreamReader(processOpenSSL.getInputStream())).readLine());
     }
 
@@ -307,10 +307,18 @@ public class DefaultPublicData {
     private BigInteger[] generateConstrainedSafePrimePair(BigInteger minValue, BigInteger[] forbiddenValues) {
         BigInteger[] pair;
         boolean isSmallerThanMinValue, isForbidden;
+        int runs = 100;
+        int max_runs = runs;
         do {
             pair = generateSafePrimePair(minValue);
             isSmallerThanMinValue = pair[1].max(minValue).equals(minValue);
             isForbidden = Arrays.equals(pair, forbiddenValues);
+            runs--;
+            if (runs == 0) {
+                System.err.println("Failed to generate safe primes within " + max_runs + " tries. Exiting.");
+                System.out.println("false,"+toCSVString()+",Can not generate safe prime pairs of this size.");
+                System.exit(15);
+            }
         } while (isForbidden || isSmallerThanMinValue);
         return pair;
     }
