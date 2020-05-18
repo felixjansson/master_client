@@ -1,5 +1,6 @@
 package com.master_thesis.client.util;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -15,9 +16,12 @@ public class Reader {
     private Queue<Integer> queue;
     private int[] staticInput;
 
-    public Reader() {
+    @Value("${input_file_path}")
+    private String filepath;
+
+    private void initiate() {
         try {
-            File file = new File("src/Demo.txt");
+            File file = new File(filepath);
             FileReader fr = new FileReader(file);
             BufferedReader br = new BufferedReader(fr);
             queue = new LinkedList<>();
@@ -32,13 +36,17 @@ public class Reader {
 
         assert queue != null;
         staticInput = queue.stream().mapToInt(Integer::intValue).toArray();
-
     }
 
+
     public Integer readValue() {
+        if (staticInput == null)
+            initiate();
+
         queue.add(queue.peek());
         return queue.poll();
     }
+
 
     public Integer readValue(int i) {
         return staticInput[i%staticInput.length];

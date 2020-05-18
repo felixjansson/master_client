@@ -1,4 +1,7 @@
 *.csv
+
+scripts/
+
 HELP.md
 .gradle
 build/
