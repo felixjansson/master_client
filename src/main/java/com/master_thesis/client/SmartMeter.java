@@ -153,6 +153,7 @@ public class SmartMeter {
         DefaultPublicData dpd = httpAdapter.getDefaultPublicData();
         sb.add(dpd.getUser());
         sb.add(construction.toString());
+        sb.add(Boolean.toString(dpd.isExternalLagrange()));
         sb.add(Integer.toString(dpd.getRunTimes()));
         sb.add(Integer.toString(dpd.getWarmupRuns()));
         sb.add(Integer.toString(dpd.gettSecure()));

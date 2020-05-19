@@ -2,6 +2,7 @@ package com.master_thesis.client;
 
 import ch.qos.logback.classic.Logger;
 import com.master_thesis.client.data.Construction;
+import com.master_thesis.client.data.DefaultPublicData;
 import com.master_thesis.client.data.RSAThresholdData;
 import com.master_thesis.client.data.RSAThresholdData.NonceData;
 import com.master_thesis.client.data.RSAThresholdData.ServerData;
@@ -33,11 +34,13 @@ public class RSAThreshold {
     private int securityThreshold;
     private BigInteger rsaNPrime;
     private PublicParameters publicParameters;
+    private DefaultPublicData defaultPublicData;
 
 
     @Autowired
-    public RSAThreshold(PublicParameters publicParameters) {
+    public RSAThreshold(PublicParameters publicParameters, DefaultPublicData defaultPublicData) {
         this.publicParameters = publicParameters;
+        this.defaultPublicData = defaultPublicData;
     }
 
     /**
@@ -95,7 +98,11 @@ public class RSAThreshold {
             // Compute the polynomial with a unique value as input.
             BigInteger share = polynomial.apply(number.intValue());
             // Multiply it with the Lagrange Coefficient.
-            share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
+            if (defaultPublicData.isExternalLagrange()) {
+                share = share.multiply(defaultPublicData.getLagrangeValue(number));
+            } else {
+                share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
+            }
             // Store the result in the map together with the RSA information.
             shares.put(server.getUri().resolve(Construction.RSA.getEndpoint()), new ServerData(share, proofComponent, matrixOfClient, skShares, rsaN));
         });

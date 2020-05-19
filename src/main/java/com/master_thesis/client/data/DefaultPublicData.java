@@ -12,10 +12,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Component
 @PropertySource("classpath:local.properties")
@@ -55,6 +54,9 @@ public class DefaultPublicData {
     private String user;
     @Value("${warmup_runs}")
     private int warmupRuns;
+    @Value("${external_lagrange}")
+    private boolean externalLagrange;
+    private Map<BigInteger, BigInteger> lagrangeMap;
 
     public int getRunTimes() {
         return runTimes;
@@ -108,11 +110,12 @@ public class DefaultPublicData {
                 ", k' bits=" + PRIME_BIT_LENGTH_PRIME +
                 ", runTimes=" + runTimes +
                 ", rsa bits=" + RSA_BIT_LENGTH +
-                ", skip runs=" + warmupRuns;
+                ", skip runs=" + warmupRuns +
+                ", external lagrange=" + externalLagrange;
     }
 
     public String toCSVString() {
-        return  construction +
+        return construction +
                 "," + numberOfServers +
                 "," + fieldBase_bits +
                 "," + generator_bits +
@@ -121,7 +124,8 @@ public class DefaultPublicData {
                 "," + PRIME_BIT_LENGTH_PRIME +
                 "," + runTimes +
                 "," + RSA_BIT_LENGTH +
-                "," + warmupRuns;
+                "," + warmupRuns +
+                "," + externalLagrange;
     }
 
     private BigInteger[] generateHVector(int numberOfClients, BigInteger nRoof) {
@@ -165,7 +169,7 @@ public class DefaultPublicData {
 
 
     public void changeDefaultValues(Scanner scanner) {
-        Set<String> settings = Set.of("servers", "fieldbasebits", "generatorbits", "tsecure", "kbits", "k'bits", "runtimes", "rsabits", "skipruns", "fb", "gb");
+        Set<String> settings = Set.of("servers", "fieldbasebits", "generatorbits", "tsecure", "kbits", "k'bits", "runtimes", "rsabits", "skipruns", "externallagrange", "el", "fb", "gb");
         String input;
         do {
             do {
@@ -213,6 +217,10 @@ public class DefaultPublicData {
                     break;
                 case "skipruns":
                     warmupRuns = scanner.nextInt();
+                    break;
+                case "externallagrange":
+                case "el":
+                    externalLagrange = scanner.nextBoolean();
                     break;
             }
             scanner.nextLine();
@@ -382,5 +390,52 @@ public class DefaultPublicData {
 
     public int getWarmupRuns() {
         return warmupRuns;
+    }
+
+    public boolean isExternalLagrange() {
+        return externalLagrange;
+    }
+
+    public BigInteger getLagrangeValue(BigInteger currentValue) {
+        if (lagrangeMap == null)
+            generateLagrangeMap();
+
+        return lagrangeMap.get(currentValue);
+    }
+
+    private void generateLagrangeMap() {
+        lagrangeMap = new HashMap<>();
+        int m = getNumberOfServers();
+        Set<BigInteger> servers = IntStream.rangeClosed(1, m).mapToObj(BigInteger::valueOf).collect(Collectors.toSet());
+        servers.forEach(x -> lagrangeMap.put(x, computeLagrangeCoefficient(x, servers)));
+    }
+
+    /**
+     * In this function a Lagrange Basis Coefficient is computed.
+     *
+     * @param currentValue    The value for which to compute the Lagrange cofficient.
+     * @param potentialValues All input values to the polynomial.
+     * @return The result of the computation. A single value.
+     */
+    public BigInteger computeLagrangeCoefficient(BigInteger currentValue, Set<BigInteger> potentialValues) {
+        // Compute the nominator, the product of all inputs except for the one that is the currentValue.
+//        BigInteger fieldbase = publicParameters.getFieldBase(0);
+//
+//        BigInteger result = potentialValues.stream().filter(x -> !x.equals(currentValue))
+//                .reduce(BigInteger.ONE, (suc, x) -> suc.multiply(
+//                        x.multiply(x.subtract(currentValue).modInverse(fieldbase)
+//                        ).mod(fieldbase)));
+//
+        BigInteger nominator = potentialValues.stream()
+                .filter(x -> !x.equals(currentValue))
+                .reduce(BigInteger.ONE, BigInteger::multiply);
+        // Compute the denominator, the product of all inputs minus the current value, except for the input that is the currentValue.
+        BigInteger denominator = potentialValues.stream()
+                .filter(x -> !x.equals(currentValue))
+                .reduce(BigInteger.ONE, (prev, x) -> prev.multiply(x.subtract(currentValue)));
+        log.debug("beta values: {}/{} = {}", nominator, denominator, nominator.divideAndRemainder(denominator));
+//         Return the nominator divided by the denominator.
+//        log.info("{} with mod. {} without mod.", result, nominator.divide(denominator));
+        return nominator.divide(denominator);
     }
 }

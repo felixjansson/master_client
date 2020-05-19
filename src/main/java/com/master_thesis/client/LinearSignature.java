@@ -2,6 +2,7 @@ package com.master_thesis.client;
 
 import ch.qos.logback.classic.Logger;
 import com.master_thesis.client.data.Construction;
+import com.master_thesis.client.data.DefaultPublicData;
 import com.master_thesis.client.data.LinearSignatureData;
 import com.master_thesis.client.data.LinearSignatureData.PublicData;
 import com.master_thesis.client.data.LinearSignatureData.ServerData;
@@ -23,11 +24,13 @@ import java.util.stream.IntStream;
 public class LinearSignature {
     private static final Logger log = (Logger) LoggerFactory.getLogger(LinearSignature.class);
     private PublicParameters publicParameters;
+    private DefaultPublicData defaultPublicData;
     private final SecureRandom random = new SecureRandom();
 
     @Autowired
-    public LinearSignature(PublicParameters publicParameters) {
+    public LinearSignature(PublicParameters publicParameters, DefaultPublicData defaultPublicData) {
         this.publicParameters = publicParameters;
+        this.defaultPublicData = defaultPublicData;
     }
 
     /**
@@ -64,7 +67,11 @@ public class LinearSignature {
             // Compute the polynomial with a unique value as input.
             BigInteger share = polynomial.apply(number.intValue());
             // Multiply it with the Lagrange Coefficient.
-            share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
+            if (defaultPublicData.isExternalLagrange()) {
+                share = share.multiply(defaultPublicData.getLagrangeValue(number));
+            } else {
+                share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
+            }
             // Store the result in the map.
             shares.put(server.getUri().resolve(Construction.LINEAR.getEndpoint()), new ServerData(share));
         });

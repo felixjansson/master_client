@@ -212,6 +212,7 @@ public class HttpAdapter {
     public void updateLocalValues(Construction construction) {
         if (!local)
             return;
+        defaultPublicData.getLagrangeValue(BigInteger.ONE);
         switch (construction) {
             case RSA:
                 defaultPublicData.getRSASecretPrimes();
