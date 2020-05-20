@@ -4,7 +4,6 @@ import ch.qos.logback.classic.Logger;
 import lombok.SneakyThrows;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
@@ -20,43 +19,53 @@ import java.util.stream.IntStream;
 @PropertySource("classpath:local.properties")
 public class DefaultPublicData {
 
-    @Value("${numberOfServers}")
+    @Value("${number_of_servers}")
     private int numberOfServers;
     //    private BigInteger localFieldBase = BigInteger.valueOf(2011);
-    @Value("${fieldBase_bits}")
-    private int fieldBase_bits;
+    @Value("${fieldbase_bits}")
+    private int fieldBaseBits;
     @Value("${generator_bits}")
-    private int generator_bits;
+    private int generatorBits;
     @Value("${t_secure}")
     private int tSecure;
     private LinearSignatureData.PublicData linearSignatureData;
 
     private final SecureRandom random = new SecureRandom();
     private static final Logger log = (Logger) LoggerFactory.getLogger(DefaultPublicData.class);
+    //    This is k hat \hat{k}
+    @Value("${k_hat}")
+    private int linearHatPrimeBitSize;
+    //    This is k
     @Value("${k}")
-    private int PRIME_BIT_LENGTH = 64;
-    @Value("${k_prime}")
-    private int PRIME_BIT_LENGTH_PRIME = 64;
+    private int linearPrimeBitSize;
     @Value("${runs}")
     private int runTimes;
     @Value("${construction}")
     private int construction;
 
-    @Value("${RSA_BIT_LENGTH}")
-    private int RSA_BIT_LENGTH;
+    @Value("${rsa_bit_size}")
+    private int rsaBitSize;
 
 
     private BigInteger fieldBase;
     private BigInteger generator;
     private BigInteger rsaNPrime;
     private BigInteger rsaN;
-    @Value("${user-tag}")
+    @Value("${user_tag}")
     private String user;
     @Value("${warmup_runs}")
     private int warmupRuns;
     @Value("${external_lagrange}")
     private boolean externalLagrange;
     private Map<BigInteger, BigInteger> lagrangeMap;
+
+
+    // Used for CSV prints
+    @Value("${read_mode}")
+    private String readMode;
+    @Value("${secret_bits}")
+    private int secret_bits;
+
 
     public int getRunTimes() {
         return runTimes;
@@ -72,7 +81,7 @@ public class DefaultPublicData {
 
     public BigInteger getFieldBase() {
         if (fieldBase == null) {
-            fieldBase = generatePrime(fieldBase_bits);
+            fieldBase = generatePrime(fieldBaseBits);
         }
         return fieldBase;
     }
@@ -83,7 +92,7 @@ public class DefaultPublicData {
 
     public BigInteger getGenerator() {
         if (generator == null) {
-            generator = generatePrime(generator_bits);
+            generator = generatePrime(generatorBits);
         }
         return generator;
     }
@@ -103,29 +112,33 @@ public class DefaultPublicData {
     @Override
     public String toString() {
         return "servers=" + numberOfServers +
-                ", fieldBase bits=" + fieldBase_bits +
-                ", generator bits=" + generator_bits +
+                ", fieldBase bits=" + fieldBaseBits +
+                ", generator bits=" + generatorBits +
                 ", tSecure=" + tSecure +
-                ", k bits=" + PRIME_BIT_LENGTH +
-                ", k' bits=" + PRIME_BIT_LENGTH_PRIME +
+                ", k hat bits=" + linearHatPrimeBitSize +
+                ", k bits=" + linearPrimeBitSize +
                 ", runTimes=" + runTimes +
-                ", rsa bits=" + RSA_BIT_LENGTH +
+                ", rsa bits=" + rsaBitSize +
                 ", skip runs=" + warmupRuns +
-                ", external lagrange=" + externalLagrange;
+                ", external lagrange=" + externalLagrange +
+                ", read mode=" + readMode +
+                ", secret bits=" + secret_bits;
     }
 
     public String toCSVString() {
         return construction +
                 "," + numberOfServers +
-                "," + fieldBase_bits +
-                "," + generator_bits +
+                "," + fieldBaseBits +
+                "," + generatorBits +
                 "," + tSecure +
-                "," + PRIME_BIT_LENGTH +
-                "," + PRIME_BIT_LENGTH_PRIME +
+                "," + linearHatPrimeBitSize +
+                "," + linearPrimeBitSize +
                 "," + runTimes +
-                "," + RSA_BIT_LENGTH +
+                "," + rsaBitSize +
                 "," + warmupRuns +
-                "," + externalLagrange;
+                "," + externalLagrange +
+                "," + readMode +
+                "," + secret_bits;
     }
 
     private BigInteger[] generateHVector(int numberOfClients, BigInteger nRoof) {
@@ -138,19 +151,19 @@ public class DefaultPublicData {
      * This is the setup from the paper.
      */
     public void generateLinearSignatureData() {
-        BigInteger[] pqRoof= generateSafePrimePair(PRIME_BIT_LENGTH);
+        BigInteger[] pqRoof = generateSafePrimePair(linearHatPrimeBitSize);
         BigInteger NRoof = pqRoof[0].multiply(pqRoof[1]);
         BigInteger totientRoof = pqRoof[0].subtract(BigInteger.ONE).multiply(pqRoof[1].subtract(BigInteger.ONE));
         BigInteger[] pq;
         BigInteger N;
         int tries = 0;
         do {
-            pq = generateSafePrimePair(PRIME_BIT_LENGTH_PRIME);
+            pq = generateSafePrimePair(linearPrimeBitSize);
             N = pq[0].multiply(pq[1]);
             log.debug("Generating safe prime try: {}, totientRoof: {}, N: {}", ++tries, totientRoof, N);
         } while (!totientRoof.gcd(N).equals(BigInteger.ONE));
         this.linearSignatureData =  new LinearSignatureData.PublicData(N, NRoof,
-                generatePrimeUpTo(PRIME_BIT_LENGTH),
+                generatePrimeUpTo(linearPrimeBitSize),
                 generateRandomBigInteger(NRoof),
                 generateRandomBigInteger(NRoof),
                 generateHVector(1, NRoof), pqRoof);
@@ -169,7 +182,7 @@ public class DefaultPublicData {
 
 
     public void changeDefaultValues(Scanner scanner) {
-        Set<String> settings = Set.of("servers", "fieldbasebits", "generatorbits", "tsecure", "kbits", "k'bits", "runtimes", "rsabits", "skipruns", "externallagrange", "el", "fb", "gb");
+        Set<String> settings = Set.of("servers", "fieldbasebits", "generatorbits", "tsecure", "k_hat", "k", "runtimes", "rsabits", "skipruns", "externallagrange", "el", "fb", "gb");
         String input;
         do {
             do {
@@ -187,23 +200,23 @@ public class DefaultPublicData {
                 case "servers":
                     this.setNumberOfServers(scanner.nextInt());
                     break;
-                case "kbits":
-                    PRIME_BIT_LENGTH = scanner.nextInt();
+                case "k_hat":
+                    linearHatPrimeBitSize = scanner.nextInt();
                     generateLinearSignatureData();
                     break;
-                case "k'bits":
-                    PRIME_BIT_LENGTH_PRIME = scanner.nextInt();
+                case "k":
+                    linearPrimeBitSize = scanner.nextInt();
                     generateLinearSignatureData();
                     break;
                 case "gb":
                 case "generatorbits":
-                    generator_bits = scanner.nextInt();
+                    generatorBits = scanner.nextInt();
                     generator = null;
                     getGenerator();
                     break;
                 case "fb":
                 case "fieldbasebits":
-                    fieldBase_bits = scanner.nextInt();
+                    fieldBaseBits = scanner.nextInt();
                     fieldBase = null;
                     getFieldBase();
                     break;
@@ -211,7 +224,7 @@ public class DefaultPublicData {
                     runTimes = scanner.nextInt();
                     break;
                 case "rsabits":
-                    RSA_BIT_LENGTH = scanner.nextInt();
+                    rsaBitSize = scanner.nextInt();
                     rsaNPrime = null;
                     getRSASecretPrimes();
                     break;
@@ -239,24 +252,24 @@ public class DefaultPublicData {
         return construction;
     }
 
-    public int getFieldBase_bits() {
-        return fieldBase_bits;
+    public int getFieldBaseBits() {
+        return fieldBaseBits;
     }
 
-    public int getGenerator_bits() {
-        return generator_bits;
+    public int getGeneratorBits() {
+        return generatorBits;
     }
 
-    public int getPRIME_BIT_LENGTH() {
-        return PRIME_BIT_LENGTH;
+    public int getLinearHatPrimeBitSize() {
+        return linearHatPrimeBitSize;
     }
 
-    public int getPRIME_BIT_LENGTH_PRIME() {
-        return PRIME_BIT_LENGTH_PRIME;
+    public int getLinearPrimeBitSize() {
+        return linearPrimeBitSize;
     }
 
-    public int getRSA_BIT_LENGTH() {
-        return RSA_BIT_LENGTH;
+    public int getRsaBitSize() {
+        return rsaBitSize;
     }
 
     public BigInteger[] getRSASecretPrimes() {
@@ -334,7 +347,7 @@ public class DefaultPublicData {
     private BigInteger[] generateSafePrimePair(BigInteger minValue) {
         BigInteger p, q;
         do {
-            p = generateSafePrime(RSA_BIT_LENGTH);
+            p = generateSafePrime(rsaBitSize);
         } while (p.compareTo(minValue) < 1);
         q = p.subtract(BigInteger.ONE).divide(BigInteger.TWO);
         return new BigInteger[]{q, p};
