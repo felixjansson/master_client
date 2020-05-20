@@ -11,6 +11,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import java.math.BigInteger;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -63,8 +64,6 @@ public class SmartMeter {
             runTest();
             return;
         }
-
-        httpAdapter.getDefaultPublicData().updateValues(args);
 
         scanner = new Scanner(System.in);
         boolean running = true;
@@ -154,23 +153,25 @@ public class SmartMeter {
         sb.add(dpd.getUser());
         sb.add(construction.toString());
         sb.add(Boolean.toString(dpd.isExternalLagrange()));
+        sb.add(reader.getReaderMode());
+        sb.add(Integer.toString(reader.getSecretBits()));
         sb.add(Integer.toString(dpd.getRunTimes()));
         sb.add(Integer.toString(dpd.getWarmupRuns()));
         sb.add(Integer.toString(dpd.gettSecure()));
         sb.add(Integer.toString(dpd.getNumberOfServers()));
         switch (construction) {
             case HASH:
-                sb.add(Integer.toString(dpd.getFieldBase_bits()));
-                sb.add(Integer.toString(dpd.getGenerator_bits()));
+                sb.add(Integer.toString(dpd.getFieldBaseBits()));
+                sb.add(Integer.toString(dpd.getGeneratorBits()));
                 break;
             case RSA:
-                sb.add(Integer.toString(dpd.getFieldBase_bits()));
-                sb.add(Integer.toString(dpd.getGenerator_bits()));
-                sb.add(Integer.toString(dpd.getRSA_BIT_LENGTH()));
+                sb.add(Integer.toString(dpd.getFieldBaseBits()));
+                sb.add(Integer.toString(dpd.getGeneratorBits()));
+                sb.add(Integer.toString(dpd.getRsaBitSize()));
                 break;
             case LINEAR:
-                sb.add(Integer.toString(dpd.getPRIME_BIT_LENGTH()));
-                sb.add(Integer.toString(dpd.getPRIME_BIT_LENGTH_PRIME()));
+                sb.add(Integer.toString(dpd.getLinearHatPrimeBitSize()));
+                sb.add(Integer.toString(dpd.getLinearPrimeBitSize()));
                 break;
             case NONCE:
                 break;
@@ -208,8 +209,7 @@ public class SmartMeter {
     }
 
     private void readAndSendShare() {
-//        int secret = reader.readValue();
-        int secret = new Random().nextInt(1000);
+        BigInteger secret = reader.readValue();
         log.info("=== Starting new share ===");
 
         if (enabledConstructions.contains(Construction.HASH)) {

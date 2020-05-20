@@ -36,21 +36,20 @@ public class LinearSignature {
     /**
      * This is the share secret function from the Linear Signature construction.
      *
-     * @param int_secret the input is the secret that should be shared.
+     * @param secret the input is the secret that should be shared.
      * @return An object with data that should be sent.
      */
-    public LinearSignatureData shareSecret(int int_secret, int fid) {
+    public LinearSignatureData shareSecret(BigInteger secret, int fid) {
         // Find the publicly available information used for this computation.
         int substationID = publicParameters.getSubstationID();
         PublicData data = publicParameters.getLinearPublicData(substationID, fid);
-        BigInteger secret = BigInteger.valueOf(int_secret);
 
         // Get a random nonce value, using a built in java pseudo random number generator (PRNG).
         BigInteger nonce = BigInteger.valueOf(random.nextLong()).mod(data.getN());
         log.info("base: {}, secret: {}, nonce: {}", data.getN(), secret, nonce);
 
         // We generate a polynomial of order t. The numerical value of t is retrieved inside the function.
-        Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, data.getN());
+        Function<Integer, BigInteger> polynomial = generatePolynomial(secret, data.getN());
 
         // We retrieve the list of servers that will be used in the computation.
         List<Server> servers = publicParameters.getServers();
@@ -89,7 +88,7 @@ public class LinearSignature {
      * @param secret is the secret of the client.
      * @return the data object, but now including the partial proof.
      */
-    public LinearSignatureData partialProof(LinearSignatureData data, int secret) {
+    public LinearSignatureData partialProof(LinearSignatureData data, BigInteger secret) {
 
         // We retrieve the public information.
         PublicData publicData = publicParameters.getLinearPublicData(data.getSubstationID(), data.getFid());
@@ -98,7 +97,7 @@ public class LinearSignature {
         BigInteger s = new BigInteger(eN.bitLength(), random).mod(eN);
 
         // Compute the xi,R with nonce and secret
-        BigInteger xR = data.getNonceData().getNonce().add(BigInteger.valueOf(secret));
+        BigInteger xR = data.getNonceData().getNonce().add(secret);
 
         // x^(eN) = {g^s * PRODUCT( h[j]^f[j,i] ) * g1^(xR)} mod nRoof
         BigInteger xeN = publicData.getG1().modPow(s, publicData.getNRoof())
@@ -125,7 +124,7 @@ public class LinearSignature {
      * @param field The polynomial is computed mod field.
      * @return A function that can take 1 value as input.
      */
-    protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {
+    protected Function<Integer, BigInteger> generatePolynomial(BigInteger secret, BigInteger field) {
         // Retrieve the t parameter for the construction.
         int t = publicParameters.getSecurityThreshold();
 
@@ -148,7 +147,7 @@ public class LinearSignature {
             // Note that everything here defines the polynomial.
             BigInteger bigIntInput = BigInteger.valueOf(input);
             // We begin with the secret as x_i + ...
-            BigInteger res = BigInteger.valueOf(secret);
+            BigInteger res = secret;
             // That is then continued by ... + a[i] * input^i + ...
             for (int i = 0; i < coefficients.size(); i++) {
                 BigInteger coefficient = coefficients.get(i);

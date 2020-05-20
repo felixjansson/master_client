@@ -275,7 +275,7 @@ public class DefaultPublicData {
     public BigInteger[] getRSASecretPrimes() {
         if (rsaN == null || rsaNPrime == null)
             generateRSAPrimes(getFieldBase());
-        return new BigInteger[] {rsaN, rsaNPrime};
+        return new BigInteger[]{rsaN, rsaNPrime};
     }
 
     private BigInteger generateSafePrime(int bits) {
@@ -355,50 +355,6 @@ public class DefaultPublicData {
 
     public String getUser() {
         return user;
-    }
-
-    public void updateValues(ApplicationArguments args) {
-        args.getOptionNames().forEach(option -> {
-            if (args.getOptionValues(option).size() == 0)
-                return;
-            String value = args.getOptionValues(option).get(0);
-            switch (option) {
-                case "user-tag":
-                    user = value;
-                    break;
-                case "runs":
-                    runTimes = Integer.parseInt(value);
-                    break;
-                case "construction":
-                    construction = Integer.parseInt(value);
-                    break;
-                case "t_secure":
-                    tSecure = Integer.parseInt(value);
-                    break;
-                case "numberOfServers":
-                    numberOfServers = Integer.parseInt(value);
-                    break;
-                case "k":
-                    PRIME_BIT_LENGTH = Integer.parseInt(value);
-                    break;
-                case "k_prime":
-                    PRIME_BIT_LENGTH_PRIME = Integer.parseInt(value);
-                    break;
-                case "fieldBase_bits":
-                    fieldBase_bits = Integer.parseInt(value);
-                    break;
-                case "generator_bits":
-                    generator_bits = Integer.parseInt(value);
-                    break;
-                case "RSA_BIT_LENGTH":
-                    RSA_BIT_LENGTH = Integer.parseInt(value);
-                    break;
-                case "warmup_runs":
-                    warmupRuns = Integer.parseInt(value);
-                    break;
-            }
-        });
-
     }
 
     public int getWarmupRuns() {

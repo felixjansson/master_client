@@ -2,10 +2,10 @@ package com.master_thesis.client;
 
 import ch.qos.logback.classic.Logger;
 import com.master_thesis.client.data.Construction;
+import com.master_thesis.client.data.DefaultPublicData;
 import com.master_thesis.client.data.HomomorphicHashData;
 import com.master_thesis.client.data.Server;
 import com.master_thesis.client.util.PublicParameters;
-import javafx.beans.binding.IntegerBinding;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,26 +23,28 @@ import java.util.stream.IntStream;
 public class HomomorphicHash {
 
     protected PublicParameters publicParameters;
+    private DefaultPublicData defaultPublicData;
     private static final Logger log = (Logger) LoggerFactory.getLogger(HomomorphicHash.class);
     private final SecureRandom random;
 
     @Autowired
-    public HomomorphicHash(PublicParameters publicParameters) {
+    public HomomorphicHash(PublicParameters publicParameters, DefaultPublicData defaultPublicData) {
         this.publicParameters = publicParameters;
+        this.defaultPublicData = defaultPublicData;
         random = new SecureRandom();
     }
 
     /**
      * This is the share secret function from the Homomorphic Hash construction.
-     * @param int_secret the input is the secret that should be shared.
+     *
+     * @param secret the input is the secret that should be shared.
      * @return An object with data that should be sent.
      */
-    public HomomorphicHashData shareSecret(int int_secret) {
+    public HomomorphicHashData shareSecret(BigInteger secret) {
         // Find the publicly available information used for this computation.
         int substationID = publicParameters.getSubstationID();
         BigInteger fieldBase = publicParameters.getFieldBase(substationID);
         BigInteger generator = publicParameters.getGenerator(substationID);
-        BigInteger secret = BigInteger.valueOf(int_secret);
 
         // Get a random nonce value, using a built in java pseudo random number generator (PRNG).
         BigInteger nonce = BigInteger.valueOf(random.nextLong()).mod(fieldBase);
@@ -52,7 +54,7 @@ public class HomomorphicHash {
         BigInteger proofComponent = hash(fieldBase, secret.add(nonce), generator);
 
         // We generate a polynomial of order t. The numerical value of t is retrieved inside the function.
-        Function<Integer, BigInteger> polynomial = generatePolynomial(int_secret, fieldBase);
+        Function<Integer, BigInteger> polynomial = generatePolynomial(secret, fieldBase);
 
         // We retrieve the list of servers that will be used in the computation.
         List<Server> servers = publicParameters.getServers();
@@ -69,7 +71,11 @@ public class HomomorphicHash {
             // Compute the polynomial with a unique value as input.
             BigInteger share = polynomial.apply(number.intValue());
             // Multiply it with the Lagrange Coefficient.
-            share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
+            if (defaultPublicData.isExternalLagrange()) {
+                share = share.multiply(defaultPublicData.getLagrangeValue(number));
+            } else {
+                share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
+            }
             // Store the result in the map.
             shares.put(server.getUri().resolve(Construction.HASH.getEndpoint()), share);
         });
@@ -88,7 +94,7 @@ public class HomomorphicHash {
      * @param field The polynomial is computed mod field.
      * @return A function that can take 1 value as input.
      */
-    protected Function<Integer, BigInteger> generatePolynomial(int secret, BigInteger field) {
+    protected Function<Integer, BigInteger> generatePolynomial(BigInteger secret, BigInteger field) {
         // Retrieve the t parameter for the construction.
         int t = publicParameters.getSecurityThreshold();
 
@@ -111,7 +117,7 @@ public class HomomorphicHash {
             // Note that everything here defines the polynomial.
             BigInteger bigIntInput = BigInteger.valueOf(input);
             // We begin with the secret as x_i + ...
-            BigInteger res = BigInteger.valueOf(secret);
+            BigInteger res = secret;
             // That is then continued by ... + a[i] * input^i + ...
             for (int i = 0; i < coefficients.size(); i++) {
                 BigInteger coefficient = coefficients.get(i);

@@ -1,5 +1,7 @@
 package com.master_thesis.client.util;
 
+import ch.qos.logback.classic.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -8,12 +10,17 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Random;
 
 @Component
 public class Reader {
+
+    private static final Logger log = (Logger) LoggerFactory.getLogger(Reader.class);
 
     private Queue<Integer> queue;
     private int[] staticInput;
@@ -22,6 +29,14 @@ public class Reader {
 
     @Value("${input_file_path}")
     private String filepath;
+
+    @Value("${read_mode}")
+    private String readMode;
+
+    @Value("${secret_bits}")
+    private int secret_bits;
+
+    private Random random = new SecureRandom();
 
     private void initiate() {
         try {
@@ -42,13 +57,46 @@ public class Reader {
         staticInput = queue.stream().mapToInt(Integer::intValue).toArray();
     }
 
-
-    public Integer readValue() {
+    private Integer readFromFile() {
         if (staticInput == null)
             initiate();
 
         queue.add(queue.peek());
         return queue.poll();
+    }
+
+    public BigInteger readValue() {
+        switch (readMode) {
+            case "file":
+                return BigInteger.valueOf(readFromFile());
+            case "random":
+                return BigInteger.valueOf(random.nextInt(1000));
+            case "bits":
+                BigInteger val;
+                do {
+                    val = new BigInteger(secret_bits, random);
+                } while (val.bitLength() < secret_bits);
+                return val;
+            default:
+                log.error("No valid reader mode selected. Using random!");
+                return BigInteger.valueOf(random.nextInt(1000));
+        }
+    }
+
+    public Integer readValue(int i) {
+        return staticInput[i % staticInput.length];
+    }
+
+    public void setFilepath(String filepath) {
+        this.filepath = filepath;
+    }
+
+    public String getReaderMode() {
+        return readMode;
+    }
+
+    public int getSecretBits() {
+        return secret_bits;
     }
 
     public Integer readValueFromCSV() {
@@ -111,14 +159,6 @@ public class Reader {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public Integer readValue(int i) {
-        return staticInput[i % staticInput.length];
-    }
-
-    public void setFilepath(String filepath) {
-        this.filepath = filepath;
     }
 
 }
