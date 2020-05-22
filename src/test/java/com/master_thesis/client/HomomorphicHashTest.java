@@ -43,11 +43,11 @@ class HomomorphicHashTest {
         Mockito.when(pp.getServers()).thenReturn(serverList);
         Mockito.when(pp.getSecurityThreshold()).thenReturn(tSecurity);
 
-        hh = new HomomorphicHash(pp);
+        hh = new HomomorphicHash(pp, null);
     }
 
     @org.junit.jupiter.api.Test
     void shareSecret() {
-        HomomorphicHashData res = hh.shareSecret(5);
+        HomomorphicHashData res = hh.shareSecret(BigInteger.ZERO);
     }
 }

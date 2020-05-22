@@ -12,10 +12,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Random;
+import java.util.*;
 
 @Component
 public class Reader {
@@ -37,6 +34,8 @@ public class Reader {
     private int secret_bits;
 
     private Random random = new SecureRandom();
+    @Value("${sin_time}")
+    private boolean sinTime = true;
 
     private void initiate() {
         try {
@@ -110,6 +109,27 @@ public class Reader {
     }
 
     @Nullable
+    public List<Integer> readValuesMappedOnTimeFromCSV(String time) {
+        if (sinTime) {
+//            2020-01-09 04:00
+            double input = Double.parseDouble(time.substring(11, 13)) / 24.0 * 2 * Math.PI;
+            double baseSecret = Math.sin(input) + 1;
+            LinkedList<Integer> retList = new LinkedList<>();
+            for (int i = 0; i < 4; i++) {
+                double dubsSecret = random.nextDouble() * baseSecret;
+                int secret = (int) (dubsSecret * 500);
+                retList.add(secret);
+            }
+            return retList;
+        }
+        if (dateRecords == null) {
+            initiateDateRecordsFromCSV();
+        }
+        return dateRecords.get(time);
+    }
+
+
+    @Nullable
     public LinkedList<Integer> readValuesMappedOnTimeFromCSV() {
         if (dateRecords == null) {
             initiateDateRecordsFromCSV();
@@ -120,6 +140,12 @@ public class Reader {
         } else {
             return null;
         }
+    }
+
+    public Set<String> getCSVKeys() {
+        if (records == null)
+            initiateDateRecordsFromCSV();
+        return dateRecords.keySet();
     }
 
     private void initiateCSV() {

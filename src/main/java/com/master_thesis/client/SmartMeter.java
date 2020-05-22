@@ -3,6 +3,7 @@ package com.master_thesis.client;
 import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.master_thesis.client.data.*;
+import com.master_thesis.client.differentialprivacy.LaplaceNoise;
 import com.master_thesis.client.util.HttpAdapter;
 import com.master_thesis.client.util.Reader;
 import org.slf4j.LoggerFactory;
@@ -34,16 +35,18 @@ public class SmartMeter {
     private ApplicationArguments args;
     private Collection<Construction> enabledConstructions = Stream.of(Construction.RSA).collect(Collectors.toSet());
     private long timer;
+    private LaplaceNoise laplace;
 
 
     @Autowired
-    public SmartMeter(ApplicationArguments args, Reader reader, RSAThreshold rsaThreshold, HomomorphicHash homomorphicHash, LinearSignature linearSignature, HttpAdapter httpAdapter) {
+    public SmartMeter(ApplicationArguments args, Reader reader, RSAThreshold rsaThreshold, HomomorphicHash homomorphicHash, LinearSignature linearSignature, HttpAdapter httpAdapter, LaplaceNoise laplace) {
         this.args = args;
         this.reader = reader;
         this.rsaThreshold = rsaThreshold;
         this.homomorphicHash = homomorphicHash;
         this.linearSignature = linearSignature;
         this.httpAdapter = httpAdapter;
+        this.laplace = laplace;
 
         if (args.containsOption("local") || args.containsOption("test")) {
             httpAdapter.toggleLocal();
@@ -62,6 +65,9 @@ public class SmartMeter {
 
         if (args.containsOption("test")) {
             runTest();
+            return;
+        } else if (args.containsOption("csv")) {
+            elementDP();
             return;
         }
 
@@ -112,6 +118,27 @@ public class SmartMeter {
                     }
             }
         }
+    }
+
+    private void elementDP() {
+        StringJoiner sj = new StringJoiner(",");
+        List<Integer> values;
+        List<String> keys = new LinkedList<>(reader.getCSVKeys());
+        keys.sort(null);
+        Iterator<String> keyiter = keys.iterator();
+        while (keyiter.hasNext()) {
+            values = reader.readValuesMappedOnTimeFromCSV(keyiter.next());
+            int correct = values.stream().reduce(0, Integer::sum);
+            long correctWithNoise = laplace.addNoise(correct, 1, Math.log(3), null);
+            BigInteger res = values.stream()
+                    .map(x -> laplace.addNoise((long) x, 1, 1000, Math.log(3), null))
+                    .map(BigInteger::valueOf)
+                    .reduce(BigInteger.ZERO, BigInteger::add);
+            sj.add(Integer.toString(correct));
+            sj.add(Long.toString(correctWithNoise));
+            sj.add(res.toString());
+        }
+        System.out.println(sj.toString());
     }
 
     private void runTest() {

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.*;
 
 class LaplaceNoiseTest {
 
@@ -77,4 +77,76 @@ class LaplaceNoiseTest {
         return consumptions.stream().map(x -> laplaceNoise.addNoise(x, l1Sensitivity, epsilon, null)).reduce(0L, Long::sum);
     }
 
+    @Test
+    void testL0Linf() {
+        double epsilon = Math.log(3);
+
+        Reader reader = new Reader();
+        System.out.println("day,hour,sum,sm1,sm2,sm3,sm4,noise sum,diff");
+
+        List<String> times = new LinkedList<>();
+        for (int i = 0; i < 10; i++) {
+            times.add("2020-01-09 0" + i);
+            times.add("2020-01-09 1" + i);
+            if (i < 4) {
+                times.add("2020-01-09 2" + i);
+            }
+        }
+        times.sort(null);
+
+        List<Integer> consumptions;
+
+        Map<String, List<Long>> l1s = new HashMap<>();
+
+
+        for (String time : times) {
+            List<Integer> day0Consumptions = reader.readValuesMappedOnTimeFromCSV(time);
+            Iterator<Integer> iterDay0 = day0Consumptions.iterator();
+            StringJoiner sj = new StringJoiner(",");
+            sj.add("0");
+            sj.add(time.substring(11, 13));
+            sj.add(Long.toString(day0Consumptions.stream().reduce(0, Integer::sum)));
+            for (int i = 0; i < day0Consumptions.size(); i++) {
+                l1s.put(time, new ArrayList<>());
+                int x = iterDay0.next();
+                sj.add(Integer.toString(x));
+                l1s.get(time).add((long) (x / day0Consumptions.size()));
+            }
+            sj.add("N/A");
+            sj.add("N/A");
+            System.out.println(sj.toString());
+        }
+
+
+        for (int days = 1; days <= 100; days++) {
+            for (String time : times) {
+                StringJoiner sj = new StringJoiner(",");
+                sj.add(Integer.toString(days));
+                sj.add(time.substring(11, 13));
+                consumptions = reader.readValuesMappedOnTimeFromCSV(time);
+                assert consumptions != null;
+                long sum = consumptions.stream().reduce(0, Integer::sum);
+//                long sumThenNoise = laplaceNoise.addNoise(correct, l1Sensitivity, epsilon, null);
+                long noiseThenSum = 0;
+                List<Long> l1sofTime = l1s.get(time);
+
+                sj.add(Long.toString(sum));
+                List<Long> missingRecord = new LinkedList<>();
+                for (int i = 0; i < consumptions.size(); i++) {
+                    long cons = consumptions.get(i);
+                    long newL1 = (l1sofTime.get(i) + cons / consumptions.size());
+                    l1sofTime.add(i, newL1);
+                    missingRecord.add(sum - cons);
+                    noiseThenSum += laplaceNoise.addNoise(cons, Math.max(Math.round(newL1 / (float) days), 1), epsilon, null);
+                    sj.add(Long.toString(l1sofTime.get(i) / days));
+                }
+
+                sj.add(Long.toString(noiseThenSum));
+                sj.add(Long.toString(Math.abs(noiseThenSum - sum)));
+                missingRecord.forEach(x -> sj.add(Long.toString(x)));
+                System.out.println(sj.toString());
+            }
+        }
+
+    }
 }

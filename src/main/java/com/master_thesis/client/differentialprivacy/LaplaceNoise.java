@@ -17,6 +17,7 @@
 package com.master_thesis.client.differentialprivacy;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
 import java.security.SecureRandom;
@@ -32,6 +33,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  * artifacts.
  * <p> TODO: add a link to the secure noise documentation.
  */
+@Component
 public class LaplaceNoise implements Noise {
     /**
      * This parameter determines the resolution of the numerical noise that is being generated
