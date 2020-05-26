@@ -1,5 +1,6 @@
 package com.master_thesis.client.differentialprivacy;
 
+import com.master_thesis.client.data.DefaultPublicData;
 import com.master_thesis.client.util.Reader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,10 +14,12 @@ class LaplaceNoiseTest {
     private LaplaceNoise laplaceNoise;
     int epsilon_exponent = 4;
     int l1Sensitivity = 1;
+    DefaultPublicData dpd;
 
     @BeforeEach
     void setup() {
         this.laplaceNoise = new LaplaceNoise();
+        dpd = new DefaultPublicData();
     }
 
     @Test
@@ -47,7 +50,7 @@ class LaplaceNoiseTest {
         long noisySum = 0;
         int l0Sensitivity = 1;
         double epsilon = 1 / Math.pow(2d, 4);
-        Reader reader = new Reader();
+        Reader reader = new Reader(dpd);
         reader.setFilepath("src/main/resources/testdata.csv");
         LinkedList<Integer> consumptions;
         long diff;
@@ -81,7 +84,7 @@ class LaplaceNoiseTest {
     void testL0Linf() {
         double epsilon = Math.log(3);
 
-        Reader reader = new Reader();
+        Reader reader = new Reader(dpd);
         System.out.println("day,hour,sum,sm1,sm2,sm3,sm4,noise sum,diff");
 
         List<String> times = new LinkedList<>();
