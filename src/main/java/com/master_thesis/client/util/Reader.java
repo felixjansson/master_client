@@ -1,7 +1,9 @@
 package com.master_thesis.client.util;
 
 import ch.qos.logback.classic.Logger;
+import com.master_thesis.client.data.DefaultPublicData;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -27,15 +29,16 @@ public class Reader {
     @Value("${input_file_path}")
     private String filepath;
 
-    @Value("${read_mode}")
-    private String readMode;
-
-    @Value("${secret_bits}")
-    private int secret_bits;
+    private DefaultPublicData dpd;
 
     private Random random = new SecureRandom();
     @Value("${sin_time}")
     private boolean sinTime = true;
+
+    @Autowired
+    public Reader(DefaultPublicData dpd) {
+        this.dpd = dpd;
+    }
 
     private void initiate() {
         try {
@@ -65,7 +68,7 @@ public class Reader {
     }
 
     public BigInteger readValue() {
-        switch (readMode) {
+        switch (dpd.getReadMode()) {
             case "file":
                 return BigInteger.valueOf(readFromFile());
             case "random":
@@ -73,8 +76,8 @@ public class Reader {
             case "bits":
                 BigInteger val;
                 do {
-                    val = new BigInteger(secret_bits, random);
-                } while (val.bitLength() < secret_bits);
+                    val = new BigInteger(dpd.getSecretBits(), random);
+                } while (val.bitLength() < dpd.getSecretBits());
                 return val;
             default:
                 log.error("No valid reader mode selected. Using random!");
@@ -91,11 +94,11 @@ public class Reader {
     }
 
     public String getReaderMode() {
-        return readMode;
+        return dpd.getReadMode();
     }
 
     public int getSecretBits() {
-        return secret_bits;
+        return dpd.getSecretBits();
     }
 
     public Integer readValueFromCSV() {

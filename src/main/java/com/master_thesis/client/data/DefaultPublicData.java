@@ -64,7 +64,7 @@ public class DefaultPublicData {
     @Value("${read_mode}")
     private String readMode;
     @Value("${secret_bits}")
-    private int secret_bits;
+    private int secretBits;
 
 
     public int getRunTimes() {
@@ -122,7 +122,7 @@ public class DefaultPublicData {
                 ", skip runs=" + warmupRuns +
                 ", external lagrange=" + externalLagrange +
                 ", read mode=" + readMode +
-                ", secret bits=" + secret_bits;
+                ", secret bits=" + secretBits;
     }
 
     public String toCSVString() {
@@ -138,7 +138,7 @@ public class DefaultPublicData {
                 "," + warmupRuns +
                 "," + externalLagrange +
                 "," + readMode +
-                "," + secret_bits;
+                "," + secretBits;
     }
 
     private BigInteger[] generateHVector(int numberOfClients, BigInteger nRoof) {
@@ -182,7 +182,7 @@ public class DefaultPublicData {
 
 
     public void changeDefaultValues(Scanner scanner) {
-        Set<String> settings = Set.of("servers", "fieldbasebits", "generatorbits", "tsecure", "k_hat", "k", "runtimes", "rsabits", "skipruns", "externallagrange", "el", "fb", "gb");
+        Set<String> settings = Set.of("servers", "fieldbasebits", "generatorbits", "tsecure", "k_hat", "k", "runtimes", "rsabits", "skipruns", "externallagrange", "el", "fb", "gb", "secretbits", "readmode");
         String input;
         do {
             do {
@@ -234,6 +234,12 @@ public class DefaultPublicData {
                 case "externallagrange":
                 case "el":
                     externalLagrange = scanner.nextBoolean();
+                    break;
+                case "readmode":
+                    readMode = scanner.next();
+                    break;
+                case "secretbits":
+                    secretBits = scanner.nextInt();
                     break;
             }
             scanner.nextLine();
@@ -406,5 +412,13 @@ public class DefaultPublicData {
 //         Return the nominator divided by the denominator.
 //        log.info("{} with mod. {} without mod.", result, nominator.divide(denominator));
         return nominator.divide(denominator);
+    }
+
+    public String getReadMode() {
+        return readMode;
+    }
+
+    public int getSecretBits() {
+        return secretBits;
     }
 }

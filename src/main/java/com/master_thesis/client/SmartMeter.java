@@ -3,8 +3,8 @@ package com.master_thesis.client;
 import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.master_thesis.client.data.*;
-import com.master_thesis.client.differentialprivacy.LaplaceNoise;
 import com.master_thesis.client.util.HttpAdapter;
+import com.master_thesis.client.util.NoiseGenerator;
 import com.master_thesis.client.util.Reader;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,20 +33,20 @@ public class SmartMeter {
     private Scanner scanner;
     private int substationID;
     private ApplicationArguments args;
-    private Collection<Construction> enabledConstructions = Stream.of(Construction.RSA).collect(Collectors.toSet());
+    private Collection<Construction> enabledConstructions = Stream.of(Construction.LINEAR).collect(Collectors.toSet());
     private long timer;
-    private LaplaceNoise laplace;
+    private NoiseGenerator noiseGenerator;
 
 
     @Autowired
-    public SmartMeter(ApplicationArguments args, Reader reader, RSAThreshold rsaThreshold, HomomorphicHash homomorphicHash, LinearSignature linearSignature, HttpAdapter httpAdapter, LaplaceNoise laplace) {
+    public SmartMeter(ApplicationArguments args, Reader reader, RSAThreshold rsaThreshold, HomomorphicHash homomorphicHash, LinearSignature linearSignature, HttpAdapter httpAdapter, NoiseGenerator noiseGenerator) {
         this.args = args;
         this.reader = reader;
         this.rsaThreshold = rsaThreshold;
         this.homomorphicHash = homomorphicHash;
         this.linearSignature = linearSignature;
         this.httpAdapter = httpAdapter;
-        this.laplace = laplace;
+        this.noiseGenerator = noiseGenerator;
 
         if (args.containsOption("local") || args.containsOption("test")) {
             httpAdapter.toggleLocal();
@@ -66,7 +66,7 @@ public class SmartMeter {
         if (args.containsOption("test")) {
             runTest();
             return;
-        } else if (args.containsOption("csv")) {
+        } else if (args.containsOption("dp")) {
             elementDP();
             return;
         }
@@ -126,16 +126,26 @@ public class SmartMeter {
         List<String> keys = new LinkedList<>(reader.getCSVKeys());
         keys.sort(null);
         Iterator<String> keyiter = keys.iterator();
+
+
         while (keyiter.hasNext()) {
             values = reader.readValuesMappedOnTimeFromCSV(keyiter.next());
             int correct = values.stream().reduce(0, Integer::sum);
-            long correctWithNoise = laplace.addNoise(correct, 1, Math.log(3), null);
+
+
+            if (noiseGenerator.getNoiseFunction().equals("gaussian")) {
+                assert !values.isEmpty();
+                noiseGenerator.computeGaussianVariance(values.stream().max(Integer::compareTo).get(), values.size());
+            }
+
+//            long correctWithNoise = noiseGenerator.addNoise(correct);
+
             BigInteger res = values.stream()
-                    .map(x -> laplace.addNoise((long) x, 1, 1000, Math.log(3), null))
+                    .map(x -> noiseGenerator.addNoise(x))
                     .map(BigInteger::valueOf)
                     .reduce(BigInteger.ZERO, BigInteger::add);
             sj.add(Integer.toString(correct));
-            sj.add(Long.toString(correctWithNoise));
+//            sj.add(Long.toString(correctWithNoise));
             sj.add(res.toString());
         }
         System.out.println(sj.toString());
