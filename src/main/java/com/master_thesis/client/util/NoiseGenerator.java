@@ -12,7 +12,9 @@ public class NoiseGenerator {
 
     private static double GAUSSIAN_MEAN = 0.0;
     private LaplaceNoise laplaceNoise;
-    private double epsilon = Math.log(2); // Papers say this is a nice epsilon
+
+    @Value("${epsilon}")
+    private double epsilon;
     private int laplaceL1 = 10;
     private double gaussianVariance;
 
@@ -51,5 +53,9 @@ public class NoiseGenerator {
 
     public String getNoiseFunction() {
         return noiseFunction;
+    }
+
+    public double getEpsilon() {
+        return epsilon;
     }
 }

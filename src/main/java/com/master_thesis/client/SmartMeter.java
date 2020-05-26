@@ -122,14 +122,13 @@ public class SmartMeter {
 
     private void elementDP() {
         StringJoiner sj = new StringJoiner(",");
+        sj.add(Double.toString(noiseGenerator.getEpsilon()));
         List<Integer> values;
         List<String> keys = new LinkedList<>(reader.getCSVKeys());
         keys.sort(null);
-        Iterator<String> keyiter = keys.iterator();
 
-
-        while (keyiter.hasNext()) {
-            values = reader.readValuesMappedOnTimeFromCSV(keyiter.next());
+        for (String key : keys) {
+            values = reader.readValuesMappedOnTimeFromCSV(key);
             int correct = values.stream().reduce(0, Integer::sum);
 
 
