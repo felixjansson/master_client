@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run full system Threshold (Sometimes false)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="client.main" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.master_thesis.client.SmartMeter" />
+    <option name="PROGRAM_PARAMETERS" value="--test --construction=2 --runs=1 --fieldbase_bits=8 --generator_bits=4 --rsa_bit_size=10 --t_secure=5 --number_of_servers=10" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

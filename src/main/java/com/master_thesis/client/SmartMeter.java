@@ -64,6 +64,7 @@ public class SmartMeter {
     public void run() {
 
         if (args.containsOption("test")) {
+            httpAdapter.toggleTester();
             runTest();
             return;
         } else if (args.containsOption("dp")) {
@@ -172,15 +173,21 @@ public class SmartMeter {
         for (int i = 0; i < checkpoint; i++) {
             readAndSendShare();
         }
-        if (timer > 15000) {
-            System.err.print("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " + "5% done in " + timer/1000 + "s. Max total time: "
-                    + timer * 20 / 1000 + "s. ==> ");
+        if (args.containsOption("csv_log")) {
+            if (timer > 15000) {
+                System.err.print("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "] " + "5% done in " + timer/1000 + "s. Max total time: "
+                        + timer * 20 / 1000 + "s. ==> ");
+            }
+            for (int i = checkpoint; i < runs; i++) {
+                readAndSendShare();
+            }
+            System.err.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "]" + " Done in " + timer + "ms.");
+            printCSVData(constructionMap.get(construction));
+        } else {
+            for (int i = checkpoint; i < runs; i++) {
+                readAndSendShare();
+            }
         }
-        for (int i = checkpoint; i < runs; i++) {
-            readAndSendShare();
-        }
-        System.err.println("[" + new SimpleDateFormat("HH:mm:ss").format(new Date()) + "]" + " Done in " + timer + "ms.");
-        printCSVData(constructionMap.get(construction));
     }
 
     private void printCSVData(Construction construction) {

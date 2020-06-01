@@ -112,7 +112,8 @@ public class Tester {
                 BigInteger rsaResult = rsaThresholdVerifier.finalEval(evals.stream());
                 BigInteger rsaServerProof = rsaThresholdVerifier.finalProof(serverProofInfo.values(), 0, rsaLastClientProof);
                 boolean valid = rsaThresholdVerifier.verify(0, rsaResult, rsaServerProof, clientProofs);
-                System.out.println(valid + ", " + defaultPublicData.toCSVString());
+                log.info(defaultPublicData.toString());
+                log.info("Valid = {}, Result = {}, Proof = {}", valid, rsaResult, rsaServerProof);
                 reset();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -149,8 +150,8 @@ public class Tester {
             lock.lock();
             try {
                 boolean valid = homomorphicHashVerifier.verify(finalEval, hashFinalProof, clientProofs);
-//                log.info("Valid = {}, Result = {}, Proof = {}", valid, finalEval, hashFinalProof);
-                System.out.println(valid + ", " + defaultPublicData.toCSVString());
+                log.info(defaultPublicData.toString());
+                log.info("Valid = {}, Result = {}, Proof = {}", valid, finalEval, hashFinalProof);
                 reset();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -183,7 +184,8 @@ public class Tester {
             lock.lock();
             try {
                 boolean valid = linearSignatureVerifier.verify(finalEval, linearFinalProof, defaultPublicData.getLinearSignatureData(), rn);
-                System.out.println(valid + "," + defaultPublicData.toCSVString());
+                log.info(defaultPublicData.toString());
+                log.info("Valid = {}, Result = {}, Proof = {}", valid, finalEval, linearFinalProof.getXTilde());
                 reset();
             } catch (Exception e) {
                 e.printStackTrace();
