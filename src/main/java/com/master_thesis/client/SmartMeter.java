@@ -70,6 +70,12 @@ public class SmartMeter {
         } else if (args.containsOption("dp")) {
             elementDP();
             return;
+        } else if (args.containsOption("statdp")) {
+            statdp();
+            return;
+        } else if (args.containsOption("manydp")) {
+            manyElementDP();
+            return;
         }
 
         scanner = new Scanner(System.in);
@@ -121,34 +127,62 @@ public class SmartMeter {
         }
     }
 
+    private void manyElementDP() {
+        for (int i = 0; i < httpAdapter.getRunTimes(); i++) {
+            System.err.println(i + "/" + httpAdapter.getRunTimes());
+            elementDP();
+        }
+    }
+
     private void elementDP() {
         StringJoiner sj = new StringJoiner(",");
-        sj.add(Double.toString(noiseGenerator.getEpsilon()));
+//        sj.add(Double.toString(noiseGenerator.getEpsilon()));
         List<Integer> values;
         List<String> keys = new LinkedList<>(reader.getCSVKeys());
         keys.sort(null);
+        keys = List.of("2020-01-13 13:00");
 
         for (String key : keys) {
-            values = reader.readValuesMappedOnTimeFromCSV(key);
-            int correct = values.stream().reduce(0, Integer::sum);
+            for (int i = 0; i <= 20; i += 5) {
+                values = reader.readValuesMappedOnTimeFromCSV(key);
+                int correct = values.stream().reduce(0, Integer::sum);
 
-
-            if (noiseGenerator.getNoiseFunction().equals("gaussian")) {
                 assert !values.isEmpty();
-                noiseGenerator.computeGaussianVariance(values.stream().max(Integer::compareTo).get(), values.size());
-            }
+                int var = values.stream().max(Integer::compareTo).get()*i;
+
+                if (noiseGenerator.getNoiseFunction().equals("gaussian")) {
+                    System.out.println("var:" + var);
+                    noiseGenerator.computeGaussianVariance(var, values.size());
+                }
 
 //            long correctWithNoise = noiseGenerator.addNoise(correct);
 
-            BigInteger res = values.stream()
-                    .map(x -> noiseGenerator.addNoise(x))
-                    .map(BigInteger::valueOf)
-                    .reduce(BigInteger.ZERO, BigInteger::add);
-            sj.add(Integer.toString(correct));
+                BigInteger res = values.stream()
+                        .map(x -> noiseGenerator.addNoise(x))
+                        .map(BigInteger::valueOf)
+                        .reduce(BigInteger.ZERO, BigInteger::add);
+//            sj.add(Integer.toString(correct));
 //            sj.add(Long.toString(correctWithNoise));
-            sj.add(res.toString());
+                sj.add("OUT");
+                sj.add(res.toString());
+                sj.add(Integer.toString(var));
+            }
+            System.out.println(sj.toString());
         }
-        System.out.println(sj.toString());
+
+    }
+
+    private void statdp() {
+        List<Integer> inputs = new LinkedList<>();
+        while (reader.hasInput()) {
+            inputs.add(reader.readValue().intValue());
+        }
+        int clients = inputs.size();
+        int variance = inputs.stream().max(Integer::compareTo).orElse(0);
+        noiseGenerator.computeGaussianVariance(variance, clients);
+
+        long sum = inputs.stream().map(noiseGenerator::addNoise).reduce(0L, Long::sum);
+        System.out.println("RESULT:" + sum);
     }
 
     private void runTest() {

@@ -35,9 +35,12 @@ public class Reader {
     @Value("${sin_time}")
     private boolean sinTime = true;
 
+    Scanner scanner;
+
     @Autowired
     public Reader(DefaultPublicData dpd) {
         this.dpd = dpd;
+        scanner = new Scanner(System.in);
     }
 
     private void initiate() {
@@ -79,6 +82,8 @@ public class Reader {
                     val = new BigInteger(dpd.getSecretBits(), random);
                 } while (val.bitLength() < dpd.getSecretBits());
                 return val;
+            case "stdin":
+                return new BigInteger(scanner.nextLine());
             default:
                 log.error("No valid reader mode selected. Using random!");
                 return BigInteger.valueOf(random.nextInt(1000));
@@ -190,4 +195,7 @@ public class Reader {
         }
     }
 
+    public boolean hasInput() {
+        return scanner.hasNext();
+    }
 }
