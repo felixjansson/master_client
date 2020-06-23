@@ -2,7 +2,7 @@ package com.master_thesis.client.data;
 
 public abstract class ComputationData {
 
-    private final Construction construction;
+    protected Construction construction;
     private int fid, id, substationID;
 
     protected ComputationData(Construction construction) {

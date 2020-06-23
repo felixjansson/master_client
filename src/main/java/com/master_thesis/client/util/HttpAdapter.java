@@ -5,7 +5,6 @@ import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.master_thesis.client.SanityCheck.Tester;
 import com.master_thesis.client.data.*;
 import lombok.SneakyThrows;
 import org.slf4j.LoggerFactory;
@@ -26,17 +25,10 @@ public class HttpAdapter {
 
     private ObjectMapper objectMapper;
     private static final Logger log = (Logger) LoggerFactory.getLogger(HttpAdapter.class);
-    private boolean local = false;
-    private Tester tester;
-
-    private DefaultPublicData defaultPublicData;
-    private boolean useTester;
 
     @Autowired
-    public HttpAdapter(Tester tester, DefaultPublicData defaultPublicData) {
-        this.tester = tester;
+    public HttpAdapter() {
         this.objectMapper = new ObjectMapper();
-        this.defaultPublicData = defaultPublicData;
     }
 
     @SneakyThrows
@@ -46,26 +38,11 @@ public class HttpAdapter {
 
     @SneakyThrows
     public List<Server> getServers() {
-        if (local)
-            return generateDummyServers();
         HttpRequest httpRequest = HttpRequest.newBuilder(URI.create("http://localhost:4000/api/server/list"))
                 .GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(httpRequest, HttpResponse.BodyHandlers.ofString());
         return new ObjectMapper().readValue(response.body(), new TypeReference<>() {
         });
-    }
-
-    private List<Server> generateDummyServers() {
-        List<Server> serverList = new LinkedList<>();
-
-        for (int i = 0; i < defaultPublicData.getNumberOfServers(); i++) {
-            Server tmpServer = new Server();
-            tmpServer.setUri(URI.create("http://localhost:200" + i + "/"));
-            tmpServer.setServerID(i);
-            serverList.add(tmpServer);
-        }
-
-        return serverList;
     }
 
     public ClientStartupData registerClient() {
@@ -77,16 +54,13 @@ public class HttpAdapter {
             log.info(response.body());
             return objectMapper.readValue(response.body(), ClientStartupData.class);
         } catch (IOException | InterruptedException e) {
-            log.error("Could not connect to Coordinator. Using default values");
-            local = true;
+            log.error("Could not connect to Coordinator");
         }
         return new ClientStartupData();
     }
 
     @SneakyThrows
     public BigInteger getFieldBase(int substationID) {
-        if (local)
-            return defaultPublicData.getFieldBase();
         URI uri = URI.create("http://localhost:4000/api/setup/fieldBase/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -95,8 +69,6 @@ public class HttpAdapter {
 
     @SneakyThrows
     public BigInteger getGenerator(int substationID) {
-        if (local)
-            return defaultPublicData.getGenerator();
         URI uri = URI.create("http://localhost:4000/api/setup/generator/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -120,8 +92,6 @@ public class HttpAdapter {
 
     @SneakyThrows
     public int getTSecurity(int substationID) {
-        if (local)
-            return defaultPublicData.gettSecure();
         URI uri = URI.create("http://localhost:4000/api/setup/t-security/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -142,12 +112,6 @@ public class HttpAdapter {
 
     @SneakyThrows
     private void postRequest(URI uri, Object body) {
-        if (local) {
-            if (useTester) {
-                tester.clientPost(body, defaultPublicData);
-            }
-            return;
-        }
         boolean sending = true;
         String jsonObject = objectMapper.writeValueAsString(body);
         int tries = 10;
@@ -183,9 +147,6 @@ public class HttpAdapter {
 
     @SneakyThrows
     public BigInteger[] getRSASecretPrimes(int substationID) {
-        if (local)
-            return defaultPublicData.getRSASecretPrimes();
-
         URI uri = URI.create("http://localhost:4000/api/setup/" + Construction.RSA.getEndpoint() + "/client/" + substationID);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -195,8 +156,6 @@ public class HttpAdapter {
 
     @SneakyThrows
     public LinearSignatureData.PublicData getLinearPublicData(int substationID, int fid) {
-        if (local)
-            return defaultPublicData.getLinearSignatureData();
         URI uri = URI.create("http://localhost:4000/api/" + Construction.LINEAR.getEndpoint() + "/client/" + substationID + "/" + fid);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -204,50 +163,5 @@ public class HttpAdapter {
         return objectMapper.readValue(response.body(), LinearSignatureData.PublicData.class);
     }
 
-    public void toggleLocal() {
-        local = !local;
-        log.info("Local mode = {}.", local);
-    }
 
-    public void updateLocalValues(Construction construction) {
-        if (!local)
-            return;
-        defaultPublicData.getLagrangeValue(BigInteger.ONE);
-        switch (construction) {
-            case RSA:
-                defaultPublicData.getRSASecretPrimes();
-            case HASH:
-                defaultPublicData.getFieldBase();
-                defaultPublicData.getGenerator();
-                break;
-            case LINEAR:
-                defaultPublicData.getLinearSignatureData();
-                break;
-            case NONCE:
-                break;
-        }
-    }
-
-    public void changeDefaultValues(Scanner scanner) {
-        defaultPublicData.changeDefaultValues(scanner);
-    }
-
-    public int getRunTimes() {
-        return defaultPublicData.getRunTimes();
-    }
-
-    public int getConstruction() {
-        return defaultPublicData.getConstruction();
-    }
-
-    public DefaultPublicData getDefaultPublicData() {
-        return defaultPublicData;
-    }
-
-    public void toggleTester() {
-        useTester = !useTester;
-        if (useTester)
-            local = true;
-        log.info("Using tester = {}, local = {}", useTester, local);
-    }
 }

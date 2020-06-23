@@ -1,47 +1,23 @@
 package com.master_thesis.client.util;
 
-import com.master_thesis.client.differentialprivacy.LaplaceNoise;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.math.BigInteger;
 import java.util.Random;
 
 @Component
 public class NoiseGenerator {
 
-    private static double GAUSSIAN_MEAN = 0.0;
-    private LaplaceNoise laplaceNoise;
-
-    @Value("${epsilon}")
-    private double epsilon;
-    private int laplaceL1 = 10;
     private double gaussianVariance;
 
-    @Value("${noise}")
-    private String noiseFunction;
-
-    @Autowired
-    public NoiseGenerator(LaplaceNoise laplaceNoise) {
-        this.laplaceNoise = laplaceNoise;
-    }
-
-
-    public long addNoise(int input) {
-        switch (noiseFunction) {
-            case "laplace":
-                return laplaceNoise.addNoise(input, laplaceL1, epsilon, null);
-            case "gaussian":
-                return input + generateGaussianIntegerNoise(GAUSSIAN_MEAN, gaussianVariance);
-            default:
-                throw new RuntimeException("There is no noise generator with name: " + laplaceNoise);
-        }
+    public BigInteger addNoise(BigInteger input) {
+        double GAUSSIAN_MEAN = 0.0;
+        return input.add(BigInteger.valueOf(generateGaussianIntegerNoise(GAUSSIAN_MEAN, gaussianVariance)));
     }
 
     public void computeGaussianVariance(int varianceLowerBound, int numberOfClients) {
-        double delta = 2 / Math.exp(numberOfClients * Math.pow(epsilon, 2) / 64);
+//        double delta = 2 / Math.exp(numberOfClients * Math.pow(epsilon, 2) / 64);
 //        numberOfClients = Math.round(64 * Math.log(2/delta)/Math.pow(epsilon,2));
-//        System.out.println("clients: " + numberOfClients + ", gauss delta: " + delta);
         this.gaussianVariance = (1.5 * varianceLowerBound) / numberOfClients;
     }
 
@@ -51,11 +27,4 @@ public class NoiseGenerator {
         return (int) Math.round(r.nextGaussian() * Math.sqrt(variance) + mean);
     }
 
-    public String getNoiseFunction() {
-        return noiseFunction;
-    }
-
-    public double getEpsilon() {
-        return epsilon;
-    }
 }

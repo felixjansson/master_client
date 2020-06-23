@@ -12,7 +12,6 @@ import java.util.List;
 
 
 @Component
-@Qualifier("Dummy")
 public class PublicParameters {
 
     private HttpAdapter httpAdapter;
@@ -26,22 +25,17 @@ public class PublicParameters {
         return httpAdapter.getServers();
     }
 
-    public int getSubstationID() {
-        return 0; // TODO: 27/03/2020 Ask Coordinator
-    }
-
-
     public BigInteger getGenerator(int substationID) {
         return httpAdapter.getGenerator(substationID);
     }
 
 
     public BigInteger getFieldBase(int substationID) {
-        return httpAdapter.getFieldBase(getSubstationID());
+        return httpAdapter.getFieldBase(substationID);
     }
 
-    public int getSecurityThreshold() {
-        return httpAdapter.getTSecurity(getSubstationID());
+    public int getSecurityThreshold(int substationID) {
+        return httpAdapter.getTSecurity(substationID);
     }
 
     public LinearSignatureData.PublicData getLinearPublicData(int substationID, int fid) {

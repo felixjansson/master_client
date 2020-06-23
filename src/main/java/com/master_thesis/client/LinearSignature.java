@@ -2,7 +2,6 @@ package com.master_thesis.client;
 
 import ch.qos.logback.classic.Logger;
 import com.master_thesis.client.data.Construction;
-import com.master_thesis.client.data.DefaultPublicData;
 import com.master_thesis.client.data.LinearSignatureData;
 import com.master_thesis.client.data.LinearSignatureData.PublicData;
 import com.master_thesis.client.data.LinearSignatureData.ServerData;
@@ -24,13 +23,11 @@ import java.util.stream.IntStream;
 public class LinearSignature {
     private static final Logger log = (Logger) LoggerFactory.getLogger(LinearSignature.class);
     private PublicParameters publicParameters;
-    private DefaultPublicData defaultPublicData;
     private final SecureRandom random = new SecureRandom();
 
     @Autowired
-    public LinearSignature(PublicParameters publicParameters, DefaultPublicData defaultPublicData) {
+    public LinearSignature(PublicParameters publicParameters) {
         this.publicParameters = publicParameters;
-        this.defaultPublicData = defaultPublicData;
     }
 
     /**
@@ -39,9 +36,8 @@ public class LinearSignature {
      * @param secret the input is the secret that should be shared.
      * @return An object with data that should be sent.
      */
-    public LinearSignatureData shareSecret(BigInteger secret, int fid) {
+    public LinearSignatureData shareSecret(BigInteger secret, int fid, int substationID) {
         // Find the publicly available information used for this computation.
-        int substationID = publicParameters.getSubstationID();
         PublicData data = publicParameters.getLinearPublicData(substationID, fid);
 
         // Get a random nonce value, using a built in java pseudo random number generator (PRNG).
@@ -49,7 +45,7 @@ public class LinearSignature {
         log.info("base: {}, secret: {}, nonce: {}", data.getN(), secret, nonce);
 
         // We generate a polynomial of order t. The numerical value of t is retrieved inside the function.
-        Function<Integer, BigInteger> polynomial = generatePolynomial(secret, data.getN());
+        Function<Integer, BigInteger> polynomial = generatePolynomial(secret, data.getN(), substationID);
 
         // We retrieve the list of servers that will be used in the computation.
         List<Server> servers = publicParameters.getServers();
@@ -66,11 +62,7 @@ public class LinearSignature {
             // Compute the polynomial with a unique value as input.
             BigInteger share = polynomial.apply(number.intValue());
             // Multiply it with the Lagrange Coefficient.
-            if (defaultPublicData.isExternalLagrange()) {
-                share = share.multiply(defaultPublicData.getLagrangeValue(number));
-            } else {
-                share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
-            }
+            share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
             // Store the result in the map.
             shares.put(server.getUri().resolve(Construction.LINEAR.getEndpoint()), new ServerData(share));
         });
@@ -124,9 +116,9 @@ public class LinearSignature {
      * @param field The polynomial is computed mod field.
      * @return A function that can take 1 value as input.
      */
-    protected Function<Integer, BigInteger> generatePolynomial(BigInteger secret, BigInteger field) {
+    protected Function<Integer, BigInteger> generatePolynomial(BigInteger secret, BigInteger field, int substationID) {
         // Retrieve the t parameter for the construction.
-        int t = publicParameters.getSecurityThreshold();
+        int t = publicParameters.getSecurityThreshold(substationID);
 
         StringBuilder logString = new StringBuilder("Polynomial used: ").append(secret);
 

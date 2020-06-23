@@ -1,6 +1,5 @@
 package com.master_thesis.client.differentialprivacy;
 
-import com.master_thesis.client.data.DefaultPublicData;
 import com.master_thesis.client.util.Reader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +50,7 @@ class LaplaceNoiseTest {
         int l0Sensitivity = 1;
         double epsilon = 1 / Math.pow(2d, 4);
         Reader reader = new Reader(dpd);
-        reader.setFilepath("src/main/resources/testdata.csv");
+        reader.setFilePath("src/main/resources/testdata.csv");
         LinkedList<Integer> consumptions;
         long diff;
         do {

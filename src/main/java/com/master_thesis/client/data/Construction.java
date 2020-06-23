@@ -4,7 +4,7 @@ public enum Construction {
     RSA("RSA Threshold Scheme", "rsa-data"),
     HASH("Homomorphic Hash", "hash-data"),
     LINEAR("Linear Homomorphic Signatures", "linear-data"),
-    NONCE("t-secure Nonce Distribution", "nonce-data");
+    DP("Differential Privacy", "dp-data");
 
 
     private final String name;

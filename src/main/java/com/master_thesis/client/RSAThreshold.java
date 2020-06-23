@@ -2,7 +2,6 @@ package com.master_thesis.client;
 
 import ch.qos.logback.classic.Logger;
 import com.master_thesis.client.data.Construction;
-import com.master_thesis.client.data.DefaultPublicData;
 import com.master_thesis.client.data.RSAThresholdData;
 import com.master_thesis.client.data.RSAThresholdData.NonceData;
 import com.master_thesis.client.data.RSAThresholdData.ServerData;
@@ -34,13 +33,12 @@ public class RSAThreshold {
     private int securityThreshold;
     private BigInteger rsaNPrime;
     private PublicParameters publicParameters;
-    private DefaultPublicData defaultPublicData;
+
 
 
     @Autowired
-    public RSAThreshold(PublicParameters publicParameters, DefaultPublicData defaultPublicData) {
+    public RSAThreshold(PublicParameters publicParameters) {
         this.publicParameters = publicParameters;
-        this.defaultPublicData = defaultPublicData;
     }
 
     /**
@@ -49,12 +47,11 @@ public class RSAThreshold {
      * @param secret the input is the secret that should be shared.
      * @return An object with data that should be sent.
      */
-    public RSAThresholdData shareSecret(BigInteger secret) {
+    public RSAThresholdData shareSecret(BigInteger secret, int substationID) {
         // Find the publicly available information used for this computation.
-        int substationID = publicParameters.getSubstationID();
         BigInteger fieldBase = publicParameters.getFieldBase(substationID);
         BigInteger generator = publicParameters.getGenerator(substationID);
-        securityThreshold = publicParameters.getSecurityThreshold();
+        securityThreshold = publicParameters.getSecurityThreshold(substationID);
 
         // Here we generate the primes, matrix and secret/public keys that will be used in this computation.
         BigInteger[] rsaNValues = publicParameters.getRsaN(substationID);
@@ -78,7 +75,7 @@ public class RSAThreshold {
         BigInteger proofComponent = hash(fieldBase, secret.add(nonce), generator);
 
         // We generate a polynomial of order t. The numerical value of t is retrieved inside the function.
-        Function<Integer, BigInteger> polynomial = generatePolynomial(secret, fieldBase);
+        Function<Integer, BigInteger> polynomial = generatePolynomial(secret, fieldBase, substationID);
 
         // We retrieve the list of servers that will be used in the computation.
         List<Server> servers = publicParameters.getServers();
@@ -97,11 +94,7 @@ public class RSAThreshold {
             // Compute the polynomial with a unique value as input.
             BigInteger share = polynomial.apply(number.intValue());
             // Multiply it with the Lagrange Coefficient.
-            if (defaultPublicData.isExternalLagrange()) {
-                share = share.multiply(defaultPublicData.getLagrangeValue(number));
-            } else {
-                share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
-            }
+            share = share.multiply(computeLagrangeCoefficient(number, polynomialInput));
             // Store the result in the map together with the RSA information.
             shares.put(server.getUri().resolve(Construction.RSA.getEndpoint()), new ServerData(share, proofComponent, matrixOfClient, skShares, rsaN));
         });
@@ -120,9 +113,9 @@ public class RSAThreshold {
      * @param field  The polynomial is computed mod field.
      * @return A function that can take 1 value as input.
      */
-    protected Function<Integer, BigInteger> generatePolynomial(BigInteger secret, BigInteger field) {
+    protected Function<Integer, BigInteger> generatePolynomial(BigInteger secret, BigInteger field, int substationID) {
         // Retrieve the t parameter for the construction.
-        int t = publicParameters.getSecurityThreshold();
+        int t = publicParameters.getSecurityThreshold(substationID);
 
         StringBuilder logString = new StringBuilder("Polynomial used: ").append(secret);
 

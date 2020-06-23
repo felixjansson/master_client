@@ -1,5 +1,7 @@
 package com.master_thesis.client.data;
 
+import com.master_thesis.client.HomomorphicHash;
+
 import java.math.BigInteger;
 import java.net.URI;
 import java.util.HashMap;
@@ -7,9 +9,9 @@ import java.util.Map;
 
 public class HomomorphicHashData {
 
-    private Map<URI, ServerData> serverData;
-    private NonceData nonceData;
-    private VerifierData verifierData;
+    protected Map<URI, ServerData> serverData;
+    protected NonceData nonceData;
+    protected VerifierData verifierData;
 
 
     public HomomorphicHashData(Map<URI, BigInteger> shares, BigInteger proofComponent, BigInteger nonce) {
@@ -17,6 +19,12 @@ public class HomomorphicHashData {
         verifierData = new VerifierData(proofComponent);
         serverData = new HashMap<>();
         shares.forEach((uri, secretShare) -> serverData.put(uri, new ServerData(secretShare)));
+    }
+
+    public HomomorphicHashData(HomomorphicHashData old) {
+        this.serverData = old.serverData;
+        this.nonceData = old.nonceData;
+        this.verifierData = old.verifierData;
     }
 
     public HomomorphicHashData setFid(int fid) {
