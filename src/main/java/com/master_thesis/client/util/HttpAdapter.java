@@ -83,8 +83,8 @@ public class HttpAdapter {
     }
 
     @SneakyThrows
-    public JsonNode listClients(int substationID) {
-        URI uri = URI.create("http://localhost:4000/api/client/list/" + substationID);
+    public JsonNode listClients(int substationID, int fid) {
+        URI uri = URI.create("http://localhost:4000/api/client/list/" + substationID + "/" + fid);
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         return objectMapper.readValue(response.body(), JsonNode.class);
@@ -151,6 +151,9 @@ public class HttpAdapter {
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         log.debug("RSA N for client: {}", response.body());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("RSA primes could not be retrieved.");
+        }
         return objectMapper.readValue(response.body(), BigInteger[].class);
     }
 

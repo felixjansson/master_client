@@ -8,7 +8,6 @@ import com.master_thesis.client.util.Reader;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -74,7 +73,7 @@ public class SmartMeter {
                     running = false;
                     break;
                 case "l":
-                    System.out.println(listClients());
+                    System.out.println("ClientIDs: " + listClientIDs());
                     break;
                 case "t":
                     toggleConstruction();
@@ -113,7 +112,8 @@ public class SmartMeter {
         Map<String, Construction> constructionMap = Map.of(
                 "1", Construction.HASH,
                 "2", Construction.RSA,
-                "3", Construction.LINEAR);
+                "3", Construction.LINEAR,
+                "4", Construction.DP);
         String input;
         do {
             System.out.printf("Client %s: Active: %s \n", clientID, enabledConstructions);
@@ -164,7 +164,16 @@ public class SmartMeter {
 
         if (enabledConstructions.contains(Construction.RSA)) {
             log.info("# FID: {} # Sending with {}", fid, Construction.RSA);
-            httpAdapter.getRSASecretPrimes(substationID);
+            try {
+                httpAdapter.getRSASecretPrimes(substationID);
+            } catch (RuntimeException e) {
+                if (e.getMessage().contains("RSA primes")) {
+                    System.out.println("Could not run RSA construction with these settings.");
+                    return;
+                } else {
+                    throw e;
+                }
+            }
 
             // Here we perform the ShareSecret function from the Threshold Signature Construction.
             RSAThresholdData data = rsaThreshold.shareSecret(secret, substationID);
@@ -246,12 +255,11 @@ public class SmartMeter {
         }
     }
 
-    private String listClients() {
-        JsonNode clients = httpAdapter.listClients(substationID);
-        JsonNode clientsAtSubstation = clients.get(Integer.toString(substationID));
-        StringBuilder sb = new StringBuilder("Clients: ");
-        clientsAtSubstation.elements().forEachRemaining(node -> sb.append(node.get("clientID")).append(", "));
-        return sb.toString();
+    private List<Integer> listClientIDs() {
+        JsonNode clients = httpAdapter.listClients(substationID, fid);
+        List<Integer> retList = new LinkedList<>();
+        clients.elements().forEachRemaining(id -> retList.add(id.asInt()));
+        return retList;
     }
 
     private void newFid() {

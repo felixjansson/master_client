@@ -1,7 +1,5 @@
 package com.master_thesis.client.data;
 
-import com.master_thesis.client.HomomorphicHash;
-
 import java.math.BigInteger;
 import java.net.URI;
 import java.util.HashMap;
